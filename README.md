@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # FrontendAndesstay
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.24.
@@ -57,3 +58,6 @@ Angular CLI does not come with an end-to-end testing framework by default. You c
 ## Additional Resources
 
 For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+=======
+# andesstay-frontend
+>>>>>>> 3908d4d8f66d3d002372c8b73fb9c04e57a7d0df
