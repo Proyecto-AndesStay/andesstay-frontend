@@ -1,13 +1,14 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { AuthService } from './services/auth.service';
 import { AccountInfo } from '@azure/msal-browser';
+import { environment } from '../environments/environment';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, HttpClientModule],
+  imports: [CommonModule],
   template: `
     <div style="padding: 30px; font-family: sans-serif; max-width: 600px; margin: 40px auto; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
       <h2>AndesStay - Sistema de Reservas</h2>
@@ -29,7 +30,7 @@ import { AccountInfo } from '@azure/msal-browser';
 
         <div style="margin-top: 20px; display: flex; gap: 10px;">
           <button (click)="probarBackend()" style="padding: 10px 20px; background-color: #2e7d32; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">
-            Probar Backend Java (8080)
+            Probar API Gateway AWS
           </button>
 
           <button (click)="logout()" style="padding: 10px 20px; background-color: #d32f2f; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">
@@ -38,12 +39,12 @@ import { AccountInfo } from '@azure/msal-browser';
         </div>
 
         <div *ngIf="respuestaBackend" style="margin-top: 20px; padding: 15px; background-color: #e8f5e9; border: 1px solid #4caf50; border-radius: 4px;">
-          <h4 style="margin-top: 0; color: #2e7d32;">¡Respuesta recibida de Spring Boot! 🎉</h4>
-          <pre style="background: #ffffff; padding: 10px; border-radius: 4px; font-size: 12px;">{{ respuestaBackend | json }}</pre>
+          <h4 style="margin-top: 0; color: #2e7d32;">¡Respuesta recibida desde AWS API Gateway & Spring Boot! 🎉</h4>
+          <pre style="background: #ffffff; padding: 10px; border-radius: 4px; font-size: 12px; overflow-x: auto;">{{ respuestaBackend | json }}</pre>
         </div>
 
         <div *ngIf="errorBackend" style="margin-top: 20px; padding: 15px; background-color: #ffebee; border: 1px solid #f44336; border-radius: 4px;">
-          <h4 style="margin-top: 0; color: #c62828;">Error de conexión con el Backend:</h4>
+          <h4 style="margin-top: 0; color: #c62828;">Error al comunicarse con la API:</h4>
           <p style="margin: 0; color: #c62828;">{{ errorBackend }}</p>
         </div>
       </div>
@@ -79,16 +80,17 @@ export class AppComponent {
     this.respuestaBackend = null;
     this.errorBackend = '';
 
-    this.http.get('http://localhost:8080/api/v1/usuarios/protegido')
-      .subscribe({
-        next: (res) => {
-          console.log('Respuesta del Backend Java:', res);
-          this.respuestaBackend = res;
-        },
-        error: (err) => {
-          console.error('Error al llamar al backend:', err);
-          this.errorBackend = `Error ${err.status}: ${err.error?.message || err.message || 'No se pudo conectar con localhost:8080'}`;
-        }
-      });
+    const url = `${environment.apiBaseUrl}/reservations`;
+
+    this.http.get(url).subscribe({
+      next: (res) => {
+        console.log('Respuesta del Backend Java desde AWS:', res);
+        this.respuestaBackend = res;
+      },
+      error: (err) => {
+        console.error('Error al llamar al API Gateway:', err);
+        this.errorBackend = `Error ${err.status}: ${err.error?.message || err.message || 'Error de conexión'}`;
+      }
+    });
   }
 }
