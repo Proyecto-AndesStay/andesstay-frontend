@@ -8,6 +8,7 @@ import {
 } from '@azure/msal-browser';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { filter, takeUntil } from 'rxjs/operators';
+import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService implements OnDestroy {
@@ -105,7 +106,10 @@ export class AuthService implements OnDestroy {
   }
 
   login(): void {
-    this.msalService.loginRedirect();
+    // Solicitamos explícitamente los scopes de la API al iniciar sesión
+    this.msalService.loginRedirect({
+      scopes: [...environment.azure.protectedResourceScopes, 'user.read'],
+    });
   }
 
   logout(): void {

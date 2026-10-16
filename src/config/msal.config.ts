@@ -12,7 +12,7 @@ import {
 import { environment } from '../environments/environment';
 
 export function msalInstanceFactory(): IPublicClientApplication {
-  return new PublicClientApplication({
+  const msalInstance = new PublicClientApplication({
     auth: {
       clientId: environment.azure.clientId,
       authority: environment.azure.authority,
@@ -33,13 +33,21 @@ export function msalInstanceFactory(): IPublicClientApplication {
       },
     },
   });
+
+  // Establecer automáticamente la cuenta activa si el usuario ya inició sesión
+  const accounts = msalInstance.getAllAccounts();
+  if (accounts.length > 0) {
+    msalInstance.setActiveAccount(accounts[0]);
+  }
+
+  return msalInstance;
 }
 
 export function msalGuardConfigFactory(): MsalGuardConfiguration {
   return {
     interactionType: InteractionType.Redirect,
     authRequest: {
-      scopes: ['user.read'],
+      scopes: [...environment.azure.protectedResourceScopes, 'user.read'],
     },
     loginFailedRoute: '/login-failed',
   };
@@ -48,8 +56,13 @@ export function msalGuardConfigFactory(): MsalGuardConfiguration {
 export function msalInterceptorConfigFactory(): MsalInterceptorConfiguration {
   const protectedResourceMap = new Map<string, Array<string> | null>();
 
+  // Mapeo doble para interceptar tanto la ruta /api como todas sus subrutas
   protectedResourceMap.set(
-    environment.apiBaseUrl + '/*',
+    environment.apiBaseUrl,
+    environment.azure.protectedResourceScopes
+  );
+  protectedResourceMap.set(
+    `${environment.apiBaseUrl}/*`,
     environment.azure.protectedResourceScopes
   );
 
