@@ -14,15 +14,74 @@ import {
   MsalGuard,
   MsalService,
   MsalBroadcastService,
+  MsalGuardConfiguration,
+  MsalInterceptorConfiguration,
 } from '@azure/msal-angular';
+import {
+  IPublicClientApplication,
+  PublicClientApplication,
+  InteractionType,
+  LogLevel,
+} from '@azure/msal-browser';
 import { firstValueFrom } from 'rxjs';
 
 import { AppComponent } from './app/app.component';
-import {
-  msalInstanceFactory,
-  msalGuardConfigFactory,
-  msalInterceptorConfigFactory,
-} from './config/msal.config';
+import { environment } from './environments/environment';
+
+export function msalInstanceFactory(): IPublicClientApplication {
+  const msalInstance = new PublicClientApplication({
+    auth: {
+      clientId: environment.azure.clientId,
+      authority: environment.azure.authority,
+      redirectUri: environment.azure.redirectUri,
+      postLogoutRedirectUri: environment.azure.postLogoutRedirectUri,
+    },
+    cache: {
+      cacheLocation: 'localStorage',
+    },
+    system: {
+      loggerOptions: {
+        loggerCallback: (level, message, containsPii) => {
+          if (containsPii) return;
+          if (level === LogLevel.Error) console.error(message);
+        },
+        logLevel: environment.production ? LogLevel.Error : LogLevel.Warning,
+        piiLoggingEnabled: false,
+      },
+    },
+  });
+
+  const accounts = msalInstance.getAllAccounts();
+  if (accounts.length > 0) {
+    msalInstance.setActiveAccount(accounts[0]);
+  }
+
+  return msalInstance;
+}
+
+export function msalGuardConfigFactory(): MsalGuardConfiguration {
+  return {
+    interactionType: InteractionType.Redirect,
+    authRequest: {
+      scopes: [...environment.azure.protectedResourceScopes, 'user.read'],
+    },
+    loginFailedRoute: '/login-failed',
+  };
+}
+
+export function msalInterceptorConfigFactory(): MsalInterceptorConfiguration {
+  const protectedResourceMap = new Map<string, Array<string> | null>();
+
+  protectedResourceMap.set(
+    environment.apiBaseUrl,
+    environment.azure.protectedResourceScopes
+  );
+
+  return {
+    interactionType: InteractionType.Redirect,
+    protectedResourceMap,
+  };
+}
 
 const routes: Routes = [
   { path: '', component: AppComponent },
