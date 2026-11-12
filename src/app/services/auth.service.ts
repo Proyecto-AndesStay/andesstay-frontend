@@ -50,6 +50,30 @@ export class AuthService {
     catch (e) { return null; }
   }
 
+  getRoles(): string[] {
+    const account = this.getActiveAccount();
+    if (!account || !account.idTokenClaims) return [];
+    const claims = account.idTokenClaims as { roles?: string[]; extension_Roles?: string };
+    if (Array.isArray(claims.roles)) {
+      return claims.roles;
+    }
+    if (typeof claims.extension_Roles === 'string') {
+      return claims.extension_Roles.split(',');
+    }
+    return [];
+  }
+
+  hasRole(expectedRole: string): boolean {
+    const roles = this.getRoles().map(r => r.toUpperCase());
+    return roles.includes(expectedRole.toUpperCase());
+  }
+
+  getScopes(): string[] {
+    const account = this.getActiveAccount();
+    const claims = account?.idTokenClaims as { scp?: string } | undefined;
+    return claims?.scp ? claims.scp.split(' ') : [];
+  }
+
   login(): void { this.msalService.loginRedirect(); }
   logout(): void { this.msalService.logoutRedirect(); }
 }
