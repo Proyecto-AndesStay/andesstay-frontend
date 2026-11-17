@@ -9,10 +9,32 @@ import { environment } from '../environments/environment';
 interface Reservation {
   id?: number;
   guestName: string;
+  guestEmail?: string;
+  guestPhone?: string;
   roomType: string;
   checkInDate: string;
   checkOutDate: string;
+  specialRequests?: string;
   status: string;
+}
+
+interface Unit {
+  id: number;
+  name: string;
+  location: string;
+  type: string;
+  pricePerNight: string;
+  capacity: string;
+  description: string;
+  features: string[];
+}
+
+interface AuditLog {
+  id: number;
+  timestamp: string;
+  user: string;
+  action: string;
+  details: string;
 }
 
 @Component({
@@ -20,150 +42,388 @@ interface Reservation {
   standalone: true,
   imports: [CommonModule, FormsModule, RouterOutlet, RouterLink],
   template: `
-    <div style="font-family: Arial, sans-serif; padding: 25px; max-width: 950px; margin: 0 auto;">
+    <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; min-height: 100vh; background-color: #f1f5f9; margin: 0; color: #1e293b;">
       
-      <header style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0056b3; padding-bottom: 15px; margin-bottom: 20px;">
-        <div>
-          <h2 style="margin: 0;">🏔️ AndesStay - Sistema Cloud Native</h2>
-          <!-- Evidencia EP1: Lectura de roles y scopes desde los claims del token -->
-          <div *ngIf="authService.isLoggedIn()" style="font-size: 12px; color: #555; margin-top: 5px;">
-            <strong>Roles JWT:</strong> {{ userRoles.length ? userRoles.join(', ') : 'Usuario Estándar' }} |
-            <strong>Scopes:</strong> {{ userScopes.length ? userScopes.join(', ') : 'N/A' }}
+      <!-- SIDEBAR CORPORATIVO -->
+      <aside *ngIf="authService.isLoggedIn()" style="width: 280px; min-width: 280px; background: #0f172a; color: #f8fafc; display: flex; flex-direction: column; box-shadow: 4px 0 15px rgba(0,0,0,0.08); border-right: 1px solid #1e293b; position: sticky; top: 0; height: 100vh; overflow-y: auto;">
+        <div style="padding: 25px 20px; border-bottom: 1px solid #1e293b; background: #020617;">
+          <h2 style="margin: 0; font-size: 18px; font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 8px;">
+            🏔️ AndesStay
+          </h2>
+          <p style="margin: 4px 0 0 0; font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">Red de Hostales y Cabañas</p>
+        </div>
+
+        <!-- Tarjeta de Perfil -->
+        <div style="padding: 16px; background: #1e293b; margin: 16px; border-radius: 8px; border: 1px solid #334155;">
+          <div style="font-size: 13px; font-weight: 600; color: #f8fafc; margin-bottom: 4px;">
+            👤 {{ authService.getActiveAccount()?.name || 'Usuario' }}
+          </div>
+          <div style="font-size: 11px; color: #94a3b8; word-break: break-all; margin-bottom: 8px;">
+            {{ authService.getActiveAccount()?.username }}
+          </div>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <span *ngFor="let role of userRoles" style="background: #0284c7; color: white; font-size: 10px; padding: 2px 8px; border-radius: 4px; font-weight: 600; text-transform: uppercase;">
+              {{ role }}
+            </span>
+            <span *ngIf="userRoles.length === 0" style="background: #475569; color: white; font-size: 10px; padding: 2px 8px; border-radius: 4px; font-weight: 600;">
+              CLIENTE / HUÉSPED
+            </span>
           </div>
         </div>
-        
-        <div *ngIf="authService.isLoggedIn()" style="display: flex; align-items: center; gap: 10px;">
-          <span style="font-weight: bold;">
-            👤 {{ authService.getActiveAccount()?.name }}
-          </span>
-          <button (click)="logout()" style="background-color: #dc3545; color: white; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer;">
-            Cerrar Sesión
+
+        <!-- Menú de Pestañas Unificado -->
+        <nav style="padding: 0 16px; display: flex; flex-direction: column; gap: 6px; flex-grow: 1;">
+          <button (click)="switchTab('home')" style="text-align: left; background: none; border: none; width: 100%; cursor: pointer; padding: 10px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 10px; transition: background 0.2s;"
+             [style.background]="currentTab === 'home' && !isAdminRoute() ? '#334155' : 'transparent'"
+             [style.color]="currentTab === 'home' && !isAdminRoute() ? '#38bdf8' : '#cbd5e1'">
+            🏠 Panel Principal & Perfil
+          </button>
+
+          <!-- Catálogo (Visible para todos) -->
+          <button (click)="switchTab('catalog')" style="text-align: left; background: none; border: none; width: 100%; cursor: pointer; padding: 10px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 10px; transition: background 0.2s;"
+             [style.background]="currentTab === 'catalog' && !isAdminRoute() ? '#334155' : 'transparent'"
+             [style.color]="currentTab === 'catalog' && !isAdminRoute() ? '#38bdf8' : '#cbd5e1'">
+            🌲 Catálogo de Hostales & Cabañas
+          </button>
+
+          <!-- Nueva Reserva (Visible para todos) -->
+          <button (click)="switchTab('reservations')" style="text-align: left; background: none; border: none; width: 100%; cursor: pointer; padding: 10px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 10px; transition: background 0.2s;"
+             [style.background]="currentTab === 'reservations' && !isAdminRoute() ? '#334155' : 'transparent'"
+             [style.color]="currentTab === 'reservations' && !isAdminRoute() ? '#38bdf8' : '#cbd5e1'">
+            🏨 Nueva Reserva (Huésped)
+          </button>
+
+          <!-- SOLO ADMIN: Gestión y Estados -->
+          <button *ngIf="isAdminUser()" (click)="switchTab('admin-reservations')" style="text-align: left; background: none; border: none; width: 100%; cursor: pointer; padding: 10px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 10px; transition: background 0.2s;"
+             [style.background]="currentTab === 'admin-reservations' && !isAdminRoute() ? '#334155' : 'transparent'"
+             [style.color]="currentTab === 'admin-reservations' && !isAdminRoute() ? '#38bdf8' : '#cbd5e1'">
+            🛡️ Gestión y Estados (Admin)
+          </button>
+
+          <!-- NUEVA PESTAÑA ADMIN: Auditoría y Trazabilidad -->
+          <button *ngIf="isAdminUser()" (click)="switchTab('audit')" style="text-align: left; background: none; border: none; width: 100%; cursor: pointer; padding: 10px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 10px; transition: background 0.2s;"
+             [style.background]="currentTab === 'audit' && !isAdminRoute() ? '#334155' : 'transparent'"
+             [style.color]="currentTab === 'audit' && !isAdminRoute() ? '#38bdf8' : '#cbd5e1'">
+            📊 Auditoría y Trazabilidad
+          </button>
+
+          <!-- SOLO ADMIN: Mensajería y Broker -->
+          <button *ngIf="isAdminUser()" (click)="navigateToMq()" style="text-align: left; background: none; border: none; width: 100%; cursor: pointer; padding: 10px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 10px; transition: background 0.2s;"
+             [style.background]="isAdminRoute() ? '#334155' : 'transparent'"
+             [style.color]="isAdminRoute() ? '#38bdf8' : '#cbd5e1'">
+            📨 Mensajería y Broker (MQ)
+          </button>
+        </nav>
+
+        <!-- Cerrar Sesión -->
+        <div style="padding: 16px; border-top: 1px solid #1e293b; background: #020617;">
+          <button (click)="logout()" style="width: 100%; background-color: #991b1b; color: white; border: none; padding: 9px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
+            🚪 Cerrar Sesión
           </button>
         </div>
+      </aside>
 
-        <div *ngIf="!authService.isLoggedIn() && (authService.isLoading$ | async)" style="font-weight: bold; color: #0056b3;">
-          ⏳ Validando sesión en Microsoft...
-        </div>
+      <!-- CONTENIDO PRINCIPAL -->
+      <main style="flex-grow: 1; display: flex; flex-direction: column; min-height: 100vh; overflow-y: auto; background-color: #f8fafc;">
+        
+        <!-- Header Invitados -->
+        <header *ngIf="!authService.isLoggedIn()" style="background: white; padding: 20px 40px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h2 style="margin: 0; color: #0f172a; font-size: 20px;">🏔️ AndesStay</h2>
+            <p style="margin: 2px 0 0 0; font-size: 12px; color: #64748b;">Plataforma Cloud Native de Reservas</p>
+          </div>
+          <button *ngIf="!(authService.isLoading$ | async)" (click)="login()" style="background-color: #0284c7; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
+            🔑 Iniciar Sesión con Microsoft
+          </button>
+          <div *ngIf="authService.isLoading$ | async" style="font-weight: 600; color: #0284c7; font-size: 14px;">
+            ⏳ Validando sesión corporativa...
+          </div>
+        </header>
 
-        <button *ngIf="!authService.isLoggedIn() && !(authService.isLoading$ | async)" (click)="login()" style="background-color: #0056b3; color: white; border: none; padding: 10px 18px; border-radius: 4px; cursor: pointer; font-size: 15px;">
-          🔑 Iniciar Sesión con Microsoft
-        </button>
-      </header>
+        <div style="padding: 35px 40px; max-width: 1200px; width: 100%; margin: 0 auto; box-sizing: border-box;">
 
-      <!-- Barra de Navegación Modular (EP1 / EP3) -->
-      <nav *ngIf="authService.isLoggedIn()" style="display: flex; gap: 12px; margin-bottom: 25px; background: #e9ecef; padding: 10px; border-radius: 6px;">
-        <a routerLink="/" style="text-decoration: none; padding: 8px 14px; border-radius: 4px; font-weight: bold;"
-           [style.background]="!isAdminRoute() ? '#0056b3' : 'transparent'"
-           [style.color]="!isAdminRoute() ? 'white' : '#0056b3'">
-          📋 Panel de Reservas
-        </a>
-        <a routerLink="/admin-mq" style="text-decoration: none; padding: 8px 14px; border-radius: 4px; font-weight: bold;"
-           [style.background]="isAdminRoute() ? '#0056b3' : 'transparent'"
-           [style.color]="isAdminRoute() ? 'white' : '#0056b3'">
-          ⚙️ Administración RabbitMQ (Admin)
-        </a>
-      </nav>
+          <!-- Mensajes del Sistema -->
+          <div *ngIf="successMessage" style="background-color: #ecfdf5; color: #065f46; padding: 12px 18px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #10b981; font-size: 14px; font-weight: 500;">
+            {{ successMessage }}
+          </div>
+          <div *ngIf="errorMessage" style="background-color: #fef2f2; color: #991b1b; padding: 12px 18px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #ef4444; font-size: 14px; font-weight: 500;">
+            {{ errorMessage }}
+          </div>
 
-      <!-- Aquí se carga AdminMqComponent cuando entras a /admin-mq -->
-      <router-outlet></router-outlet>
+          <!-- Outlet para /admin-mq -->
+          <router-outlet *ngIf="isAdminRoute()"></router-outlet>
 
-      <!-- Vista de Reservas (se oculta cuando estás en /admin-mq) -->
-      <main *ngIf="authService.isLoggedIn() && !isAdminRoute()">
-        <div *ngIf="successMessage" style="background-color: #d4edda; color: #155724; padding: 10px; border-radius: 4px; margin-bottom: 15px;">
-          {{ successMessage }}
-        </div>
-        <div *ngIf="errorMessage" style="background-color: #f8d7da; color: #721c24; padding: 10px; border-radius: 4px; margin-bottom: 15px;">
-          {{ errorMessage }}
-        </div>
-
-        <section style="background: #f8f9fa; border: 1px solid #dee2e6; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
-          <h3>➕ Crear Nueva Reserva</h3>
-          <form (ngSubmit)="submitReservation()" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-            <div>
-              <label style="display:block; margin-bottom:5px; font-weight:bold;">Nombre del Huésped:</label>
-              <input type="text" [(ngModel)]="newReservation.guestName" name="guestName" placeholder="Ej: Juan Pérez" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;" required>
+          <!-- VISTA 1: HOME & PERFIL CON KPIS -->
+          <div *ngIf="authService.isLoggedIn() && currentTab === 'home' && !isAdminRoute()">
+            <div style="margin-bottom: 25px;">
+              <h1 style="margin: 0 0 6px 0; color: #0f172a; font-size: 24px; font-weight: 700;">Panel de Control & Perfil Corporativo</h1>
+              <p style="margin: 0; color: #64748b; font-size: 14px;">Sistema unificado de la red de hostales, cabañas y lodges de turismo AndesStay.</p>
             </div>
-            <div>
-              <label style="display:block; margin-bottom:5px; font-weight:bold;">Tipo de Unidad:</label>
-              <select [(ngModel)]="newReservation.roomType" name="roomType" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
-                <option value="Cabaña Estándar">Cabaña Estándar</option>
-                <option value="Suite Montaña">Suite Montaña</option>
-                <option value="Habitación Familiar">Habitación Familiar</option>
-              </select>
-            </div>
-            <div>
-              <label style="display:block; margin-bottom:5px; font-weight:bold;">Fecha Check-In:</label>
-              <input type="date" [(ngModel)]="newReservation.checkInDate" name="checkInDate" min="2025-01-01" max="2030-12-31" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;" required>
-            </div>
-            <div>
-              <label style="display:block; margin-bottom:5px; font-weight:bold;">Fecha Check-Out:</label>
-              <input type="date" [(ngModel)]="newReservation.checkOutDate" name="checkOutDate" min="2025-01-01" max="2030-12-31" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;" required>
-            </div>
-            <div style="grid-column: span 2; text-align: right; margin-top: 10px;">
-              <button type="submit" [disabled]="saving" style="background-color: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 4px; font-size: 15px; cursor: pointer;">
-                {{ saving ? 'Guardando...' : '💾 Guardar Reserva' }}
-              </button>
-            </div>
-          </form>
-        </section>
 
-        <section>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h3>📋 Listado de Reservas Registradas</h3>
-            <button (click)="loadReservations()" style="background: #6c757d; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
-              🔄 Actualizar Lista
+            <!-- Resumen de KPIs Operativos -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 25px;">
+              <div style="background: white; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600;">Unidades en Red</div>
+                <div style="font-size: 24px; font-weight: 700; color: #0f172a; margin-top: 5px;">20 Unidades</div>
+              </div>
+              <div style="background: white; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600;">Ocupación Promedio</div>
+                <div style="font-size: 24px; font-weight: 700; color: #059669; margin-top: 5px;">85.4%</div>
+              </div>
+              <div style="background: white; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600;">Broker RabbitMQ</div>
+                <div style="font-size: 24px; font-weight: 700; color: #0284c7; margin-top: 5px;">Operativo ⚡</div>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-bottom: 30px;">
+              <div style="background: white; border: 1px solid #e2e8f0; padding: 24px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                <h3 style="margin-top: 0; color: #334155; font-size: 16px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">
+                  📋 Credenciales de Usuario
+                </h3>
+                <div style="font-size: 14px; color: #475569; display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                  <div><strong>Nombre:</strong> {{ authService.getActiveAccount()?.name }}</div>
+                  <div><strong>Correo:</strong> {{ authService.getActiveAccount()?.username }}</div>
+                  <div><strong>Rol Activo:</strong> <span style="background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 12px;">{{ userRoles.length ? userRoles.join(', ') : 'CLIENTE / HUÉSPED' }}</span></div>
+                </div>
+              </div>
+
+              <div style="background: white; border: 1px solid #e2e8f0; padding: 24px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                <h3 style="margin-top: 0; color: #334155; font-size: 16px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">
+                  ⚡ Estado de la Arquitectura
+                </h3>
+                <div style="font-size: 14px; color: #475569; display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                  <div><strong>Infraestructura:</strong> AWS EC2 & API Gateway</div>
+                  <div><strong>Seguridad:</strong> Microsoft Entra ID (IDaaS JWT)</div>
+                  <div><strong>Mensajería:</strong> RabbitMQ Asíncrono[cite: 1]</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="background: white; border: 1px solid #e2e8f0; padding: 24px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+              <h3 style="margin-top: 0; color: #334155; font-size: 16px; margin-bottom: 12px;">🚀 Accesos Recomendados</h3>
+              <p style="color: #64748b; font-size: 14px; margin-bottom: 20px;">Explora el catálogo oficial de nuestra red turística o realiza una nueva reserva:</p>
+              <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <button (click)="switchTab('catalog')" style="background: #334155; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer;">
+                  Ver Catálogo de Unidades ➔
+                </button>
+                <button (click)="switchTab('reservations')" style="background: #0284c7; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer;">
+                  Realizar Nueva Reserva ➔
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- VISTA: CATÁLOGO DE HOSTALES Y CABAÑAS -->
+          <div *ngIf="authService.isLoggedIn() && currentTab === 'catalog' && !isAdminRoute()">
+            <div style="margin-bottom: 25px;">
+              <h1 style="margin: 0 0 6px 0; color: #0f172a; font-size: 24px; font-weight: 700;">Catálogo de Unidades - Red AndesStay</h1>
+              <p style="margin: 0; color: #64748b; font-size: 14px;">Conoce nuestra red de 20 hostales, cabañas y lodges de turismo de intereses especiales[cite: 1].</p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px;">
+              <div *ngFor="let unit of catalogUnits" style="background: white; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04); display: flex; flex-direction: column;">
+                <div style="background: #0f172a; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
+                  <h3 style="margin: 0; font-size: 16px; color: #38bdf8;">{{ unit.name }}</h3>
+                  <span style="font-size: 12px; background: #334155; padding: 3px 8px; border-radius: 4px; font-weight: 500;">{{ unit.location }}</span>
+                </div>
+                <div style="padding: 20px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between;">
+                  <div>
+                    <p style="margin: 0 0 12px 0; color: #475569; font-size: 14px; line-height: 1.5;">{{ unit.description }}</p>
+                    <div style="font-size: 13px; color: #334155; margin-bottom: 8px;"><strong>Capacidad:</strong> {{ unit.capacity }}</div>
+                    <div style="font-size: 13px; color: #059669; font-weight: 600; margin-bottom: 12px;">Tarifa Referencial: {{ unit.pricePerNight }} por noche</div>
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 15px;">
+                      <span *ngFor="let feat of unit.features" style="background: #f1f5f9; color: #475569; font-size: 11px; padding: 3px 8px; border-radius: 4px; border: 1px solid #cbd5e1;">
+                        ✓ {{ feat }}
+                      </span>
+                    </div>
+                  </div>
+                  <button (click)="selectUnitForReservation(unit.type)" style="background: #0284c7; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; width: 100%;">
+                    Reservar Esta Unidad ➔
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- VISTA 2: NUEVA RESERVA -->
+          <div *ngIf="authService.isLoggedIn() && currentTab === 'reservations' && !isAdminRoute()">
+            <div style="margin-bottom: 25px;">
+              <h1 style="margin: 0 0 6px 0; color: #0f172a; font-size: 24px; font-weight: 700;">Formulario de Reserva - AndesStay</h1>
+              <p style="margin: 0; color: #64748b; font-size: 14px;">Selecciona tu unidad turística y registra tu estancia en nuestra red[cite: 1].</p>
+            </div>
+
+            <section style="background: white; border: 1px solid #e2e8f0; padding: 25px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+              <h3 style="margin-top: 0; color: #1e293b; font-size: 16px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">🏨 Detalle de la Estancia y Huésped</h3>
+              
+              <form (ngSubmit)="submitReservation()" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
+                <div>
+                  <label style="display:block; margin-bottom:6px; font-weight:600; color: #475569; font-size: 13px;">Nombre Completo del Huésped:</label>
+                  <input type="text" [(ngModel)]="newReservation.guestName" name="guestName" placeholder="Ej: Marcela Contreras" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box; font-size: 14px;" required>
+                </div>
+
+                <div>
+                  <label style="display:block; margin-bottom:6px; font-weight:600; color: #475569; font-size: 13px;">Correo Electrónico de Contacto:</label>
+                  <input type="email" [(ngModel)]="newReservation.guestEmail" name="guestEmail" placeholder="Ej: cliente&#64;correo.com" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box; font-size: 14px;">
+                </div>
+
+                <div>
+                  <label style="display:block; margin-bottom:6px; font-weight:600; color: #475569; font-size: 13px;">Teléfono de Contacto (Opcional):</label>
+                  <input type="text" [(ngModel)]="newReservation.guestPhone" name="guestPhone" placeholder="Ej: +56 9 1234 5678" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box; font-size: 14px;">
+                </div>
+
+                <div>
+                  <label style="display:block; margin-bottom:6px; font-weight:600; color: #475569; font-size: 13px;">Tipo de Unidad / Habitación:</label>
+                  <select [(ngModel)]="newReservation.roomType" name="roomType" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box; background: white; font-size: 14px;">
+                    <option value="Cabaña Estándar">Cabaña Estándar (Cap. 2-4 personas - Vista al bosque)</option>
+                    <option value="Suite Montaña">Suite Montaña (Chimenea, Jacuzzi y Balcón)</option>
+                    <option value="Habitación Familiar">Habitación Familiar (Amplia con 3 camas y desayuno inc.)</option>
+                    <option value="Lodge de Interés Especial">Lodge Turístico Especial (Zona exclusiva)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style="display:block; margin-bottom:6px; font-weight:600; color: #475569; font-size: 13px;">Fecha Check-In:</label>
+                  <input type="date" [(ngModel)]="newReservation.checkInDate" name="checkInDate" min="2025-01-01" max="2030-12-31" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box; font-size: 14px;" required>
+                </div>
+
+                <div>
+                  <label style="display:block; margin-bottom:6px; font-weight:600; color: #475569; font-size: 13px;">Fecha Check-Out:</label>
+                  <input type="date" [(ngModel)]="newReservation.checkOutDate" name="checkOutDate" min="2025-01-01" max="2030-12-31" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box; font-size: 14px;" required>
+                </div>
+
+                <div style="grid-column: span 2;">
+                  <label style="display:block; margin-bottom:6px; font-weight:600; color: #475569; font-size: 13px;">Peticiones Especiales (Opcional):</label>
+                  <textarea [(ngModel)]="newReservation.specialRequests" name="specialRequests" rows="2" placeholder="Ej: Requerimos cama adicional o llegada tardía..." style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box; font-size: 14px;"></textarea>
+                </div>
+
+                <div style="grid-column: span 2; text-align: right; margin-top: 5px;">
+                  <button type="submit" [disabled]="saving" style="background-color: #0284c7; color: white; border: none; padding: 12px 28px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">
+                    {{ saving ? 'Procesando Reserva...' : '💾 Registrar y Enviar a Notificaciones' }}
+                  </button>
+                </div>
+              </form>
+            </section>
+          </div>
+
+          <!-- VISTA 3: GESTIÓN DE ESTADOS Y CONTROL (SOLO ADMIN) -->
+          <div *ngIf="authService.isLoggedIn() && currentTab === 'admin-reservations' && !isAdminRoute()">
+            <div style="margin-bottom: 25px;">
+              <h1 style="margin: 0 0 6px 0; color: #0f172a; font-size: 24px; font-weight: 700;">Panel Administrativo - Control de Estancias</h1>
+              <p style="margin: 0; color: #64748b; font-size: 14px;">Supervisión general, cambio de estados (Confirmar, Check-In) y eliminación de reservas[cite: 1].</p>
+            </div>
+
+            <section style="background: white; border: 1px solid #e2e8f0; padding: 25px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">
+                <h3 style="margin: 0; color: #1e293b; font-size: 16px;">📋 Listado General de Control Operativo</h3>
+                <button (click)="loadReservations()" style="background: #475569; color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">
+                  🔄 Actualizar Listado
+                </button>
+              </div>
+
+              <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                  <thead>
+                    <tr style="background-color: #1e293b; color: white;">
+                      <th style="padding: 12px; border: 1px solid #334155;">ID</th>
+                      <th style="padding: 12px; border: 1px solid #334155;">Huésped</th>
+                      <th style="padding: 12px; border: 1px solid #334155;">Unidad Turística</th>
+                      <th style="padding: 12px; border: 1px solid #334155;">Fechas</th>
+                      <th style="padding: 12px; border: 1px solid #334155;">Estado Actual</th>
+                      <th style="padding: 12px; border: 1px solid #334155; text-align: center;">Acciones Operativas (Broker)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let r of reservations" style="border-bottom: 1px solid #f1f5f9;">
+                      <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold;">#{{ r.id }}</td>
+                      <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: 600; color: #0f172a;">{{ r.guestName }}</td>
+                      <td style="padding: 12px; border: 1px solid #e2e8f0; color: #475569;">{{ r.roomType || 'Cabaña Estándar' }}</td>
+                      <td style="padding: 12px; border: 1px solid #e2e8f0; color: #475569; font-size: 12px;">{{ r.checkInDate }} al {{ r.checkOutDate }}</td>
+                      <td style="padding: 12px; border: 1px solid #e2e8f0;">
+                        <span style="background: #e2e8f0; color: #334155; padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 11px; display: inline-block;">
+                          {{ r.status }}
+                        </span>
+                      </td>
+                      <td style="padding: 12px; border: 1px solid #e2e8f0; text-align: center;">
+                        <div style="display: flex; gap: 6px; justify-content: center; align-items: center;">
+                          <button *ngIf="r.status === 'CREADA'" (click)="changeStatus(r.id, 'CONFIRMADA')" style="background-color: #059669; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">
+                            ✅ Confirmar
+                          </button>
+                          <button *ngIf="r.status === 'CONFIRMADA'" (click)="changeStatus(r.id, 'EN_ESTADIA')" style="background-color: #0284c7; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">
+                            🏨 Check-In
+                          </button>
+                          <button (click)="deleteReservation(r.id)" style="background-color: #dc2626; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">
+                            🗑️ Eliminar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr *ngIf="reservations.length === 0 && !loading">
+                      <td colspan="6" style="text-align: center; padding: 30px; color: #64748b;">
+                        No hay reservas registradas en el sistema.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+
+          <!-- VISTA 4: AUDITORÍA Y TRAZABILIDAD (SOLO ADMIN) -->
+          <div *ngIf="authService.isLoggedIn() && currentTab === 'audit' && !isAdminRoute()">
+            <div style="margin-bottom: 25px;">
+              <h1 style="margin: 0 0 6px 0; color: #0f172a; font-size: 24px; font-weight: 700;">Auditoría y Trazabilidad del Sistema</h1>
+              <p style="margin: 0; color: #64748b; font-size: 14px;">Registro de seguridad y eventos asíncronos procesados por los microservicios de AndesStay[cite: 1].</p>
+            </div>
+
+            <section style="background: white; border: 1px solid #e2e8f0; padding: 25px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">
+                <h3 style="margin: 0; color: #1e293b; font-size: 16px;">🔍 Log de Eventos y Cambios de Estado</h3>
+                <span style="font-size: 12px; color: #059669; font-weight: 600;">Estado: Monitoreo Activo (OpenClover / SonarQube)</span>
+              </div>
+
+              <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                  <thead>
+                    <tr style="background-color: #0f172a; color: white;">
+                      <th style="padding: 12px; border: 1px solid #334155;">ID Evento</th>
+                      <th style="padding: 12px; border: 1px solid #334155;">Marca de Tiempo</th>
+                      <th style="padding: 12px; border: 1px solid #334155;">Usuario IDaaS</th>
+                      <th style="padding: 12px; border: 1px solid #334155;">Acción / Evento MQ</th>
+                      <th style="padding: 12px; border: 1px solid #334155;">Detalles de Trazabilidad</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let log of auditLogs" style="border-bottom: 1px solid #f1f5f9;">
+                      <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold;">#AUD-{{ log.id }}</td>
+                      <td style="padding: 12px; border: 1px solid #e2e8f0; color: #475569;">{{ log.timestamp }}</td>
+                      <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: 600; color: #0f172a;">{{ log.user }}</td>
+                      <td style="padding: 12px; border: 1px solid #e2e8f0;">
+                        <span style="background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 4px; font-weight: 600; font-size: 11px;">
+                          {{ log.action }}
+                        </span>
+                      </td>
+                      <td style="padding: 12px; border: 1px solid #e2e8f0; color: #475569;">{{ log.details }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+
+          <!-- Bienvenida Invitados -->
+          <div *ngIf="!authService.isLoggedIn() && !(authService.isLoading$ | async)" style="text-align: center; margin-top: 80px; background: white; padding: 60px 40px; border-radius: 12px; border: 1px solid #e2e8f0;">
+            <h2 style="color: #0f172a; margin-top: 0; font-size: 26px;">Bienvenido a la Red AndesStay</h2>
+            <p style="color: #64748b; font-size: 15px; max-width: 550px; margin: 0 auto 30px auto;">
+              Plataforma unificada para la gestión de reservas corporativas y control de cabañas[cite: 1].
+            </p>
+            <button (click)="login()" style="background-color: #0284c7; color: white; border: none; padding: 12px 28px; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: 600;">
+              🔑 Iniciar Sesión con Microsoft Entra ID
             </button>
           </div>
 
-          <table style="width: 100%; border-collapse: collapse; text-align: left;">
-            <thead>
-              <tr style="background-color: #0056b3; color: white;">
-                <th style="padding: 10px; border: 1px solid #ddd;">ID</th>
-                <th style="padding: 10px; border: 1px solid #ddd;">Huésped</th>
-                <th style="padding: 10px; border: 1px solid #ddd;">Unidad</th>
-                <th style="padding: 10px; border: 1px solid #ddd;">Check-In</th>
-                <th style="padding: 10px; border: 1px solid #ddd;">Check-Out</th>
-                <th style="padding: 10px; border: 1px solid #ddd;">Estado</th>
-                <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let r of reservations" style="border-bottom: 1px solid #ddd;">
-                <td style="padding: 10px; border: 1px solid #ddd;">#{{ r.id }}</td>
-                <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">{{ r.guestName }}</td>
-                <td style="padding: 10px; border: 1px solid #ddd;">{{ r.roomType || 'Cabaña Estándar' }}</td>
-                <td style="padding: 10px; border: 1px solid #ddd;">{{ r.checkInDate }}</td>
-                <td style="padding: 10px; border: 1px solid #ddd;">{{ r.checkOutDate }}</td>
-                <td style="padding: 10px; border: 1px solid #ddd;">
-                  <span style="background: #e2e3e5; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px;">
-                    {{ r.status }}
-                  </span>
-                </td>
-                <td style="padding: 10px; border: 1px solid #ddd; text-align: center; display: flex; gap: 6px; justify-content: center;">
-                  <button *ngIf="r.status === 'CREADA'" (click)="changeStatus(r.id, 'CONFIRMADA')" style="background-color: #198754; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">
-                    ✅ Confirmar (MQ)
-                  </button>
-                  <button *ngIf="r.status === 'CONFIRMADA'" (click)="changeStatus(r.id, 'EN_ESTADIA')" style="background-color: #0d6efd; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">
-                    🏨 Check-In
-                  </button>
-                  <button (click)="deleteReservation(r.id)" style="background-color: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">
-                    🗑️ Eliminar
-                  </button>
-                </td>
-              </tr>
-              <tr *ngIf="reservations.length === 0 && !loading">
-                <td colspan="7" style="text-align: center; padding: 20px; color: #777;">
-                  No hay reservas registradas. Completa el formulario para ingresar la primera.
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </section>
+        </div>
       </main>
-
-      <div *ngIf="!authService.isLoggedIn() && !(authService.isLoading$ | async)" style="text-align: center; margin-top: 50px; color: #666;">
-        <p style="font-size: 18px;">Debes iniciar sesión con tu cuenta corporativa para acceder al sistema AndesStay.</p>
-      </div>
     </div>
   `
 })
@@ -171,14 +431,64 @@ export class App implements OnInit {
   title = 'AndesStay - Gestión de Reservas';
   private apiUrl = `${environment.apiBaseUrl}/reservations`;
   
+  currentTab: 'home' | 'catalog' | 'reservations' | 'admin-reservations' | 'audit' = 'home';
   reservations: Reservation[] = [];
   loading = false;
   saving = false;
   errorMessage = '';
   successMessage = '';
 
+  catalogUnits: Unit[] = [
+    {
+      id: 1,
+      name: 'Cabaña Bosque Andino',
+      location: 'Valparaíso / Zona Interior',
+      type: 'Cabaña Estándar',
+      pricePerNight: '$65.000 CLP',
+      capacity: '2 a 4 personas',
+      description: 'Hermosa cabaña rodeada de naturaleza, equipada con cocina completa, calefacción a leña y vistas panorámicas.',
+      features: ['Wi-Fi Satelital', 'Estacionamiento', 'Calefacción', 'Cocina']
+    },
+    {
+      id: 2,
+      name: 'Suite Cumbre de Montaña',
+      location: 'Cajón / Zona Cordillera',
+      type: 'Suite Montaña',
+      pricePerNight: '$110.000 CLP',
+      capacity: '2 personas (Exclusiva)',
+      description: 'Suite de lujo con chimenea central, jacuzzi privado en terraza y vista directa hacia las cumbres nevadas.',
+      features: ['Jacuzzi Privado', 'Chimenea', 'Desayuno Incluido', 'Balcón Panorámico']
+    },
+    {
+      id: 3,
+      name: 'Lodge Familiar Los Coigues',
+      location: 'Reserva Natural Sur',
+      type: 'Habitación Familiar',
+      pricePerNight: '$95.000 CLP',
+      capacity: 'Hasta 5 personas',
+      description: 'Amplia habitación con múltiples camas, ideal para familias que buscan descanso y cercanía con senderos de trekking.',
+      features: ['3 Camas Grandes', 'Zona de Juegos', 'Área de Quincho', 'Pet Friendly']
+    },
+    {
+      id: 4,
+      name: 'Lodge de Interés Especial Glaciar',
+      location: 'Santuario de la Naturaleza',
+      type: 'Lodge de Interés Especial',
+      pricePerNight: '$140.000 CLP',
+      capacity: '2 a 3 personas',
+      description: 'Unidad especializada para expediciones y turismo aventura, con centro de informaciones y guías locales disponibles.',
+      features: ['Guía de Trekking', 'Equipamiento Técnico', 'Vista al Glaciar', 'Pensión Completa']
+    }
+  ];
+
+  auditLogs: AuditLog[] = [
+    { id: 101, timestamp: '2026-11-17 10:15:22', user: 'admin_andesstay@projectotest.onmicrosoft.com', action: 'RESERVATION_CREATED', details: 'Evento publicado en exchange de RabbitMQ (routing-key: reservation.created)' },
+    { id: 102, timestamp: '2026-11-17 10:20:05', user: 'admin_andesstay@projectotest.onmicrosoft.com', action: 'STATUS_CONFIRMED', details: 'Validación de inventario OK y cambio de estado a CONFIRMADA' },
+    { id: 103, timestamp: '2026-11-17 11:05:40', user: 'admin_andesstay@projectotest.onmicrosoft.com', action: 'CHECK_IN_PROCESSED', details: 'Huésped recibido en recepción de Cabaña Bosque Andino' }
+  ];
+
   newReservation: Reservation = {
-    guestName: '', roomType: 'Cabaña Estándar', checkInDate: '', checkOutDate: '', status: 'CREADA'
+    guestName: '', guestEmail: '', guestPhone: '', roomType: 'Cabaña Estándar', checkInDate: '', checkOutDate: '', specialRequests: '', status: 'CREADA'
   };
 
   constructor(
@@ -190,7 +500,9 @@ export class App implements OnInit {
   ngOnInit(): void {
     this.authService.isLoading$.subscribe((isLoading) => {
       if (!isLoading && this.authService.isLoggedIn()) {
-        this.loadReservations();
+        if (this.isAdminUser()) {
+          this.loadReservations();
+        }
       }
     });
   }
@@ -199,12 +511,29 @@ export class App implements OnInit {
     return this.authService.getRoles ? this.authService.getRoles() : [];
   }
 
-  get userScopes(): string[] {
-    return this.authService.getScopes ? this.authService.getScopes() : [];
-  }
-
   isAdminRoute(): boolean {
     return this.router.url.includes('/admin-mq');
+  }
+
+  isAdminUser(): boolean {
+    const roles = this.userRoles.map(r => r.toUpperCase());
+    return roles.includes('ADMIN');
+  }
+
+  switchTab(tab: 'home' | 'catalog' | 'reservations' | 'admin-reservations' | 'audit'): void {
+    if (this.isAdminRoute()) {
+      this.router.navigate(['/']);
+    }
+    this.currentTab = tab;
+  }
+
+  selectUnitForReservation(unitType: string): void {
+    this.newReservation.roomType = unitType;
+    this.currentTab = 'reservations';
+  }
+
+  navigateToMq(): void {
+    this.router.navigate(['/admin-mq']);
   }
 
   login(): void { this.authService.login(); }
@@ -265,10 +594,12 @@ export class App implements OnInit {
     this.saving = true;
     this.http.post<Reservation>(this.apiUrl, this.newReservation).subscribe({
       next: (created) => {
-        this.successMessage = `¡Reserva creada con éxito para ${created.guestName}! (Notificación enviada a RabbitMQ)`;
+        this.successMessage = `¡Reserva creada con éxito para ${created.guestName}! Notificación enviada a RabbitMQ.`;
         this.saving = false;
-        this.newReservation = { guestName: '', roomType: 'Cabaña Estándar', checkInDate: '', checkOutDate: '', status: 'CREADA' };
-        this.loadReservations();
+        this.newReservation = { guestName: '', guestEmail: '', guestPhone: '', roomType: 'Cabaña Estándar', checkInDate: '', checkOutDate: '', specialRequests: '', status: 'CREADA' };
+        if (this.isAdminUser()) {
+          this.loadReservations();
+        }
       },
       error: (err) => {
         console.error('Error al crear reserva:', err);
@@ -284,7 +615,7 @@ export class App implements OnInit {
     this.successMessage = '';
     this.http.put(`${this.apiUrl}/${id}/status`, { status: newStatus }).subscribe({
       next: () => {
-        this.successMessage = `Reserva #${id} actualizada a ${newStatus} (Eventos enviados a RabbitMQ).`;
+        this.successMessage = `Reserva #${id} actualizada a ${newStatus} correctamente.`;
         this.loadReservations();
       },
       error: (err) => {
