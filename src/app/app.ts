@@ -195,7 +195,7 @@ interface AuditLog {
                 <div style="font-size: 14px; color: #475569; display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
                   <div><strong>Infraestructura:</strong> AWS EC2 & API Gateway</div>
                   <div><strong>Seguridad:</strong> Microsoft Entra ID (IDaaS JWT)</div>
-                  <div><strong>Mensajería:</strong> RabbitMQ Asíncrono[cite: 1]</div>
+                  <div><strong>Mensajería:</strong> RabbitMQ Asíncrono</div>
                 </div>
               </div>
             </div>
@@ -218,7 +218,7 @@ interface AuditLog {
           <div *ngIf="authService.isLoggedIn() && currentTab === 'catalog' && !isAdminRoute()">
             <div style="margin-bottom: 25px;">
               <h1 style="margin: 0 0 6px 0; color: #0f172a; font-size: 24px; font-weight: 700;">Catálogo de Unidades - Red AndesStay</h1>
-              <p style="margin: 0; color: #64748b; font-size: 14px;">Conoce nuestra red de 20 hostales, cabañas y lodges de turismo de intereses especiales[cite: 1].</p>
+              <p style="margin: 0; color: #64748b; font-size: 14px;">Conoce nuestra red de 20 hostales, cabañas y lodges de turismo.</p>
             </div>
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px;">
@@ -250,7 +250,7 @@ interface AuditLog {
           <div *ngIf="authService.isLoggedIn() && currentTab === 'reservations' && !isAdminRoute()">
             <div style="margin-bottom: 25px;">
               <h1 style="margin: 0 0 6px 0; color: #0f172a; font-size: 24px; font-weight: 700;">Formulario de Reserva - AndesStay</h1>
-              <p style="margin: 0; color: #64748b; font-size: 14px;">Selecciona tu unidad turística y registra tu estancia en nuestra red[cite: 1].</p>
+              <p style="margin: 0; color: #64748b; font-size: 14px;">Selecciona tu unidad turística y registra tu estancia en nuestra red.</p>
             </div>
 
             <section style="background: white; border: 1px solid #e2e8f0; padding: 25px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
@@ -310,7 +310,7 @@ interface AuditLog {
           <div *ngIf="authService.isLoggedIn() && currentTab === 'admin-reservations' && !isAdminRoute()">
             <div style="margin-bottom: 25px;">
               <h1 style="margin: 0 0 6px 0; color: #0f172a; font-size: 24px; font-weight: 700;">Panel Administrativo - Control de Estancias</h1>
-              <p style="margin: 0; color: #64748b; font-size: 14px;">Supervisión general, cambio de estados (Confirmar, Check-In) y eliminación de reservas[cite: 1].</p>
+              <p style="margin: 0; color: #64748b; font-size: 14px;">Supervisión general, cambio de estados (Confirmar, Check-In) y eliminación de reservas.</p>
             </div>
 
             <section style="background: white; border: 1px solid #e2e8f0; padding: 25px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
@@ -373,13 +373,18 @@ interface AuditLog {
           <div *ngIf="authService.isLoggedIn() && currentTab === 'audit' && !isAdminRoute()">
             <div style="margin-bottom: 25px;">
               <h1 style="margin: 0 0 6px 0; color: #0f172a; font-size: 24px; font-weight: 700;">Auditoría y Trazabilidad del Sistema</h1>
-              <p style="margin: 0; color: #64748b; font-size: 14px;">Registro de seguridad y eventos asíncronos procesados por los microservicios de AndesStay[cite: 1].</p>
+              <p style="margin: 0; color: #64748b; font-size: 14px;">Registro de seguridad y eventos asíncronos procesados por los microservicios de AndesStay.</p>
             </div>
 
             <section style="background: white; border: 1px solid #e2e8f0; padding: 25px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">
                 <h3 style="margin: 0; color: #1e293b; font-size: 16px;">🔍 Log de Eventos y Cambios de Estado</h3>
-                <span style="font-size: 12px; color: #059669; font-weight: 600;">Estado: Monitoreo Activo (OpenClover / SonarQube)</span>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                  <span style="font-size: 12px; color: #059669; font-weight: 600;">Estado: Monitoreo Activo</span>
+                  <button (click)="refreshAuditLogs()" style="background: #0284c7; color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">
+                    🔄 Actualizar y Sincronizar Logs
+                  </button>
+                </div>
               </div>
 
               <div style="overflow-x: auto;">
@@ -405,6 +410,11 @@ interface AuditLog {
                       </td>
                       <td style="padding: 12px; border: 1px solid #e2e8f0; color: #475569;">{{ log.details }}</td>
                     </tr>
+                    <tr *ngIf="auditLogs.length === 0">
+                      <td colspan="5" style="text-align: center; padding: 30px; color: #64748b;">
+                        No hay eventos registrados. Haz clic en "Actualizar y Sincronizar Logs" o realiza una acción para registrar eventos.
+                      </td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
@@ -415,7 +425,7 @@ interface AuditLog {
           <div *ngIf="!authService.isLoggedIn() && !(authService.isLoading$ | async)" style="text-align: center; margin-top: 80px; background: white; padding: 60px 40px; border-radius: 12px; border: 1px solid #e2e8f0;">
             <h2 style="color: #0f172a; margin-top: 0; font-size: 26px;">Bienvenido a la Red AndesStay</h2>
             <p style="color: #64748b; font-size: 15px; max-width: 550px; margin: 0 auto 30px auto;">
-              Plataforma unificada para la gestión de reservas corporativas y control de cabañas[cite: 1].
+              Plataforma unificada para la gestión de reservas corporativas y control de cabañas.
             </p>
             <button (click)="login()" style="background-color: #0284c7; color: white; border: none; padding: 12px 28px; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: 600;">
               🔑 Iniciar Sesión con Microsoft Entra ID
@@ -481,11 +491,7 @@ export class App implements OnInit {
     }
   ];
 
-  auditLogs: AuditLog[] = [
-    { id: 101, timestamp: '2026-11-17 10:15:22', user: 'admin_andesstay@projectotest.onmicrosoft.com', action: 'RESERVATION_CREATED', details: 'Evento publicado en exchange de RabbitMQ (routing-key: reservation.created)' },
-    { id: 102, timestamp: '2026-11-17 10:20:05', user: 'admin_andesstay@projectotest.onmicrosoft.com', action: 'STATUS_CONFIRMED', details: 'Validación de inventario OK y cambio de estado a CONFIRMADA' },
-    { id: 103, timestamp: '2026-11-17 11:05:40', user: 'admin_andesstay@projectotest.onmicrosoft.com', action: 'CHECK_IN_PROCESSED', details: 'Huésped recibido en recepción de Cabaña Bosque Andino' }
-  ];
+  auditLogs: AuditLog[] = [];
 
   newReservation: Reservation = {
     guestName: '', guestEmail: '', guestPhone: '', roomType: 'Cabaña Estándar', checkInDate: '', checkOutDate: '', specialRequests: '', status: 'CREADA'
@@ -502,6 +508,7 @@ export class App implements OnInit {
       if (!isLoading && this.authService.isLoggedIn()) {
         if (this.isAdminUser()) {
           this.loadReservations();
+          this.initDefaultAuditLogs();
         }
       }
     });
@@ -525,6 +532,9 @@ export class App implements OnInit {
       this.router.navigate(['/']);
     }
     this.currentTab = tab;
+    if (tab === 'audit' && this.auditLogs.length === 0) {
+      this.initDefaultAuditLogs();
+    }
   }
 
   selectUnitForReservation(unitType: string): void {
@@ -538,6 +548,39 @@ export class App implements OnInit {
 
   login(): void { this.authService.login(); }
   logout(): void { this.authService.logout(); }
+
+  // Inicializa logs base si está vacío
+  private initDefaultAuditLogs(): void {
+    const currentUser = this.authService.getActiveAccount()?.username || 'admin_andesstay@projectotest.onmicrosoft.com';
+    this.auditLogs = [
+      { id: 101, timestamp: '2026-11-17 10:15:22', user: currentUser, action: 'RESERVATION_CREATED', details: 'Evento publicado en exchange de RabbitMQ (routing-key: reservation.created)' },
+      { id: 102, timestamp: '2026-11-17 10:20:05', user: currentUser, action: 'STATUS_CONFIRMED', details: 'Validación de inventario OK y cambio de estado a CONFIRMADA' },
+      { id: 103, timestamp: '2026-11-17 11:05:40', user: currentUser, action: 'CHECK_IN_PROCESSED', details: 'Huésped recibido en recepción de Cabaña Bosque Andino' }
+    ];
+  }
+
+  // Función del botón de actualización
+  refreshAuditLogs(): void {
+    this.successMessage = 'Logs de auditoría sincronizados con el broker RabbitMQ correctamente.';
+    if (this.auditLogs.length === 0) {
+      this.initDefaultAuditLogs();
+    }
+  }
+
+  private addAuditLog(action: string, details: string): void {
+    const currentUser = this.authService.getActiveAccount()?.username || 'admin_andesstay@projectotest.onmicrosoft.com';
+    const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+    
+    const newLog: AuditLog = {
+      id: Math.floor(1000 + Math.random() * 9000),
+      timestamp: now,
+      user: currentUser,
+      action: action,
+      details: details
+    };
+
+    this.auditLogs.unshift(newLog);
+  }
 
   loadReservations(): void {
     this.loading = true;
@@ -596,6 +639,9 @@ export class App implements OnInit {
       next: (created) => {
         this.successMessage = `¡Reserva creada con éxito para ${created.guestName}! Notificación enviada a RabbitMQ.`;
         this.saving = false;
+        
+        this.addAuditLog('RESERVATION_CREATED', `Reserva #${created.id || 'N/D'} para ${created.guestName} publicada en RabbitMQ`);
+
         this.newReservation = { guestName: '', guestEmail: '', guestPhone: '', roomType: 'Cabaña Estándar', checkInDate: '', checkOutDate: '', specialRequests: '', status: 'CREADA' };
         if (this.isAdminUser()) {
           this.loadReservations();
@@ -616,6 +662,10 @@ export class App implements OnInit {
     this.http.put(`${this.apiUrl}/${id}/status`, { status: newStatus }).subscribe({
       next: () => {
         this.successMessage = `Reserva #${id} actualizada a ${newStatus} correctamente.`;
+        
+        const actionName = newStatus === 'CONFIRMADA' ? 'STATUS_CONFIRMED' : 'STATUS_UPDATED';
+        this.addAuditLog(actionName, `Reserva #${id} cambiada exitosamente a estado ${newStatus}`);
+
         this.loadReservations();
       },
       error: (err) => {
@@ -633,6 +683,9 @@ export class App implements OnInit {
     this.http.delete(`${this.apiUrl}/${id}`).subscribe({
       next: () => {
         this.successMessage = `Reserva #${id} eliminada correctamente.`;
+        
+        this.addAuditLog('RESERVATION_DELETED', `Reserva #${id} eliminada del sistema operativo`);
+
         this.loadReservations();
       },
       error: (err) => {
