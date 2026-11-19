@@ -79,15 +79,15 @@ interface AuditLog {
             🏠 Panel Principal & Perfil
           </button>
 
-          <!-- Catálogo (Visible para todos) -->
-          <button (click)="switchTab('catalog')" style="text-align: left; background: none; border: none; width: 100%; cursor: pointer; padding: 10px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 10px; transition: background 0.2s;"
+          <!-- Catálogo (Oculto para Auditor) -->
+          <button *ngIf="!isOnlyAuditor()" (click)="switchTab('catalog')" style="text-align: left; background: none; border: none; width: 100%; cursor: pointer; padding: 10px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 10px; transition: background 0.2s;"
              [style.background]="currentTab === 'catalog' && !isAdminRoute() ? '#334155' : 'transparent'"
              [style.color]="currentTab === 'catalog' && !isAdminRoute() ? '#38bdf8' : '#cbd5e1'">
             🌲 Catálogo de Hostales & Cabañas
           </button>
 
-          <!-- Nueva Reserva (Visible para todos) -->
-          <button (click)="switchTab('reservations')" style="text-align: left; background: none; border: none; width: 100%; cursor: pointer; padding: 10px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 10px; transition: background 0.2s;"
+          <!-- Nueva Reserva (Oculto para Auditor) -->
+          <button *ngIf="!isOnlyAuditor()" (click)="switchTab('reservations')" style="text-align: left; background: none; border: none; width: 100%; cursor: pointer; padding: 10px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 10px; transition: background 0.2s;"
              [style.background]="currentTab === 'reservations' && !isAdminRoute() ? '#334155' : 'transparent'"
              [style.color]="currentTab === 'reservations' && !isAdminRoute() ? '#38bdf8' : '#cbd5e1'">
             🏨 Nueva Reserva (Huésped)
@@ -100,8 +100,8 @@ interface AuditLog {
             🛡️ Gestión y Estados (Admin)
           </button>
 
-          <!-- NUEVA PESTAÑA ADMIN: Auditoría y Trazabilidad -->
-          <button *ngIf="isAdminUser()" (click)="switchTab('audit')" style="text-align: left; background: none; border: none; width: 100%; cursor: pointer; padding: 10px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 10px; transition: background 0.2s;"
+          <!-- ADMIN Y AUDITOR: Auditoría y Trazabilidad -->
+          <button *ngIf="canViewAudit()" (click)="switchTab('audit')" style="text-align: left; background: none; border: none; width: 100%; cursor: pointer; padding: 10px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 10px; transition: background 0.2s;"
              [style.background]="currentTab === 'audit' && !isAdminRoute() ? '#334155' : 'transparent'"
              [style.color]="currentTab === 'audit' && !isAdminRoute() ? '#38bdf8' : '#cbd5e1'">
             📊 Auditoría y Trazabilidad
@@ -113,6 +113,12 @@ interface AuditLog {
              [style.color]="isAdminRoute() ? '#38bdf8' : '#cbd5e1'">
             📨 Mensajería y Broker (MQ)
           </button>
+
+          <!-- SOLO ADMIN: Enlace externo a Kafka UI -->
+          <a *ngIf="isAdminUser()" href="http://100.55.187.142:8090" target="_blank" rel="noopener noreferrer"
+             style="text-align: left; text-decoration: none; color: #cbd5e1; padding: 10px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 10px; transition: background 0.2s;">
+            ⚡ Kafka UI (Streaming) ↗
+          </a>
         </nav>
 
         <!-- Cerrar Sesión -->
@@ -195,12 +201,12 @@ interface AuditLog {
                 <div style="font-size: 14px; color: #475569; display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
                   <div><strong>Infraestructura:</strong> AWS EC2 & API Gateway</div>
                   <div><strong>Seguridad:</strong> Microsoft Entra ID (IDaaS JWT)</div>
-                  <div><strong>Mensajería:</strong> RabbitMQ Asíncrono</div>
+                  <div><strong>Mensajería:</strong> RabbitMQ & Kafka Streaming</div>
                 </div>
               </div>
             </div>
 
-            <div style="background: white; border: 1px solid #e2e8f0; padding: 24px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+            <div *ngIf="!isOnlyAuditor()" style="background: white; border: 1px solid #e2e8f0; padding: 24px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
               <h3 style="margin-top: 0; color: #334155; font-size: 16px; margin-bottom: 12px;">🚀 Accesos Recomendados</h3>
               <p style="color: #64748b; font-size: 14px; margin-bottom: 20px;">Explora el catálogo oficial de nuestra red turística o realiza una nueva reserva:</p>
               <div style="display: flex; gap: 15px; flex-wrap: wrap;">
@@ -215,7 +221,7 @@ interface AuditLog {
           </div>
 
           <!-- VISTA: CATÁLOGO DE HOSTALES Y CABAÑAS -->
-          <div *ngIf="authService.isLoggedIn() && currentTab === 'catalog' && !isAdminRoute()">
+          <div *ngIf="authService.isLoggedIn() && currentTab === 'catalog' && !isAdminRoute() && !isOnlyAuditor()">
             <div style="margin-bottom: 25px;">
               <h1 style="margin: 0 0 6px 0; color: #0f172a; font-size: 24px; font-weight: 700;">Catálogo de Unidades - Red AndesStay</h1>
               <p style="margin: 0; color: #64748b; font-size: 14px;">Conoce nuestra red de 20 hostales, cabañas y lodges de turismo.</p>
@@ -247,7 +253,7 @@ interface AuditLog {
           </div>
 
           <!-- VISTA 2: NUEVA RESERVA -->
-          <div *ngIf="authService.isLoggedIn() && currentTab === 'reservations' && !isAdminRoute()">
+          <div *ngIf="authService.isLoggedIn() && currentTab === 'reservations' && !isAdminRoute() && !isOnlyAuditor()">
             <div style="margin-bottom: 25px;">
               <h1 style="margin: 0 0 6px 0; color: #0f172a; font-size: 24px; font-weight: 700;">Formulario de Reserva - AndesStay</h1>
               <p style="margin: 0; color: #64748b; font-size: 14px;">Selecciona tu unidad turística y registra tu estancia en nuestra red.</p>
@@ -369,8 +375,8 @@ interface AuditLog {
             </section>
           </div>
 
-          <!-- VISTA 4: AUDITORÍA Y TRAZABILIDAD (SOLO ADMIN) -->
-          <div *ngIf="authService.isLoggedIn() && currentTab === 'audit' && !isAdminRoute()">
+          <!-- VISTA 4: AUDITORÍA Y TRAZABILIDAD (ADMIN Y AUDITOR) -->
+          <div *ngIf="authService.isLoggedIn() && currentTab === 'audit' && !isAdminRoute() && canViewAudit()">
             <div style="margin-bottom: 25px;">
               <h1 style="margin: 0 0 6px 0; color: #0f172a; font-size: 24px; font-weight: 700;">Auditoría y Trazabilidad del Sistema</h1>
               <p style="margin: 0; color: #64748b; font-size: 14px;">Registro de seguridad y eventos asíncronos procesados por los microservicios de AndesStay.</p>
@@ -440,6 +446,7 @@ interface AuditLog {
 export class App implements OnInit {
   title = 'AndesStay - Gestión de Reservas';
   private apiUrl = `${environment.apiBaseUrl}/reservations`;
+  private auditApiUrl = `${environment.apiBaseUrl}/audit`;
   
   currentTab: 'home' | 'catalog' | 'reservations' | 'admin-reservations' | 'audit' = 'home';
   reservations: Reservation[] = [];
@@ -508,7 +515,10 @@ export class App implements OnInit {
       if (!isLoading && this.authService.isLoggedIn()) {
         if (this.isAdminUser()) {
           this.loadReservations();
-          this.initDefaultAuditLogs();
+          this.loadAuditLogs();
+        } else if (this.isAuditorUser()) {
+          this.currentTab = 'audit';
+          this.loadAuditLogs();
         }
       }
     });
@@ -527,13 +537,26 @@ export class App implements OnInit {
     return roles.includes('ADMIN');
   }
 
+  isAuditorUser(): boolean {
+    const roles = this.userRoles.map(r => r.toUpperCase());
+    return roles.includes('AUDITOR');
+  }
+
+  isOnlyAuditor(): boolean {
+    return this.isAuditorUser() && !this.isAdminUser();
+  }
+
+  canViewAudit(): boolean {
+    return this.isAdminUser() || this.isAuditorUser();
+  }
+
   switchTab(tab: 'home' | 'catalog' | 'reservations' | 'admin-reservations' | 'audit'): void {
     if (this.isAdminRoute()) {
       this.router.navigate(['/']);
     }
     this.currentTab = tab;
-    if (tab === 'audit' && this.auditLogs.length === 0) {
-      this.initDefaultAuditLogs();
+    if (tab === 'audit') {
+      this.loadAuditLogs();
     }
   }
 
@@ -549,7 +572,6 @@ export class App implements OnInit {
   login(): void { this.authService.login(); }
   logout(): void { this.authService.logout(); }
 
-  // Inicializa logs base si está vacío
   private initDefaultAuditLogs(): void {
     const currentUser = this.authService.getActiveAccount()?.username || 'admin_andesstay@projectotest.onmicrosoft.com';
     this.auditLogs = [
@@ -559,12 +581,33 @@ export class App implements OnInit {
     ];
   }
 
-  // Función del botón de actualización
+  loadAuditLogs(): void {
+    this.http.get<any[]>(this.auditApiUrl).subscribe({
+      next: (events) => {
+        if (events && events.length > 0) {
+          this.auditLogs = events.map((e, index) => ({
+            id: e.reservationId || (index + 1),
+            timestamp: e.timestamp ? e.timestamp.replace('T', ' ').substring(0, 19) : 'Reciente',
+            user: e.performedBy || 'Sistema AndesStay',
+            action: e.eventType || 'KAFKA_EVENT',
+            details: e.details || `Reserva #${e.reservationId ?? 'N/D'} - ${e.guestName ?? ''} (${e.status ?? ''})`
+          }));
+        } else if (this.auditLogs.length === 0) {
+          this.initDefaultAuditLogs();
+        }
+      },
+      error: (err) => {
+        console.error('Error al cargar auditoría desde Kafka:', err);
+        if (this.auditLogs.length === 0) {
+          this.initDefaultAuditLogs();
+        }
+      }
+    });
+  }
+
   refreshAuditLogs(): void {
-    this.successMessage = 'Logs de auditoría sincronizados con el broker RabbitMQ correctamente.';
-    if (this.auditLogs.length === 0) {
-      this.initDefaultAuditLogs();
-    }
+    this.successMessage = 'Sincronizando eventos en tiempo real desde Kafka (ms-andesstay-audit)...';
+    this.loadAuditLogs();
   }
 
   private addAuditLog(action: string, details: string): void {
