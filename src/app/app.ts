@@ -93,11 +93,11 @@ interface AuditLog {
             🏨 Nueva Reserva (Huésped)
           </button>
 
-          <!-- SOLO ADMIN: Gestión y Estados -->
-          <button *ngIf="isAdminUser()" (click)="switchTab('admin-reservations')" style="text-align: left; background: none; border: none; width: 100%; cursor: pointer; padding: 10px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 10px; transition: background 0.2s;"
+          <!-- ADMIN Y RECEPCIONISTA: Gestión y Estados -->
+          <button *ngIf="canManageReservations()" (click)="switchTab('admin-reservations')" style="text-align: left; background: none; border: none; width: 100%; cursor: pointer; padding: 10px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 10px; transition: background 0.2s;"
              [style.background]="currentTab === 'admin-reservations' && !isAdminRoute() ? '#334155' : 'transparent'"
              [style.color]="currentTab === 'admin-reservations' && !isAdminRoute() ? '#38bdf8' : '#cbd5e1'">
-            🛡️ Gestión y Estados (Admin)
+            🛡️ Gestión y Estados
           </button>
 
           <!-- ADMIN Y AUDITOR: Auditoría y Trazabilidad -->
@@ -252,7 +252,7 @@ interface AuditLog {
             </div>
           </div>
 
-          <!-- VISTA 2: NUEVA RESERVA -->
+          <!-- VISTA 2: NUEVA RESERVA + SEGUIMIENTO -->
           <div *ngIf="authService.isLoggedIn() && currentTab === 'reservations' && !isAdminRoute() && !isOnlyAuditor()">
             <div style="margin-bottom: 25px;">
               <h1 style="margin: 0 0 6px 0; color: #0f172a; font-size: 24px; font-weight: 700;">Formulario de Reserva - AndesStay</h1>
@@ -310,13 +310,52 @@ interface AuditLog {
                 </div>
               </form>
             </section>
+
+            <!-- Tabla de seguimiento para el Huésped (Solo Lectura) -->
+            <section style="background: white; border: 1px solid #e2e8f0; padding: 25px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-top: 25px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0; color: #1e293b; font-size: 16px;">📋 Estado de Reservas Registradas</h3>
+                <button (click)="loadReservations()" style="background: #475569; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                  🔄 Actualizar Estado
+                </button>
+              </div>
+              <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                  <thead>
+                    <tr style="background-color: #1e293b; color: white;">
+                      <th style="padding: 10px; border: 1px solid #334155;">ID</th>
+                      <th style="padding: 10px; border: 1px solid #334155;">Huésped</th>
+                      <th style="padding: 10px; border: 1px solid #334155;">Unidad</th>
+                      <th style="padding: 10px; border: 1px solid #334155;">Fechas</th>
+                      <th style="padding: 10px; border: 1px solid #334155;">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let r of reservations" style="border-bottom: 1px solid #f1f5f9;">
+                      <td style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;">#{{ r.id }}</td>
+                      <td style="padding: 10px; border: 1px solid #e2e8f0;">{{ r.guestName }}</td>
+                      <td style="padding: 10px; border: 1px solid #e2e8f0;">{{ r.roomType || 'Cabaña Estándar' }}</td>
+                      <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px;">{{ r.checkInDate }} al {{ r.checkOutDate }}</td>
+                      <td style="padding: 10px; border: 1px solid #e2e8f0;">
+                        <span style="background: #e0f2fe; color: #0369a1; padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 11px;">
+                          {{ r.status }}
+                        </span>
+                      </td>
+                    </tr>
+                    <tr *ngIf="reservations.length === 0 && !loading">
+                      <td colspan="5" style="text-align: center; padding: 20px; color: #64748b;">No hay reservas registradas aún.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
           </div>
 
-          <!-- VISTA 3: GESTIÓN DE ESTADOS Y CONTROL (SOLO ADMIN) -->
-          <div *ngIf="authService.isLoggedIn() && currentTab === 'admin-reservations' && !isAdminRoute()">
+          <!-- VISTA 3: GESTIÓN DE ESTADOS Y CONTROL (ADMIN Y RECEPCIONISTA) -->
+          <div *ngIf="authService.isLoggedIn() && currentTab === 'admin-reservations' && !isAdminRoute() && canManageReservations()">
             <div style="margin-bottom: 25px;">
-              <h1 style="margin: 0 0 6px 0; color: #0f172a; font-size: 24px; font-weight: 700;">Panel Administrativo - Control de Estancias</h1>
-              <p style="margin: 0; color: #64748b; font-size: 14px;">Supervisión general, cambio de estados (Confirmar, Check-In) y eliminación de reservas.</p>
+              <h1 style="margin: 0 0 6px 0; color: #0f172a; font-size: 24px; font-weight: 700;">Panel Operativo - Control de Estancias</h1>
+              <p style="margin: 0; color: #64748b; font-size: 14px;">Supervisión general y cambio de estados (Confirmar, Check-In, Check-Out y Cancelar).</p>
             </div>
 
             <section style="background: white; border: 1px solid #e2e8f0; padding: 25px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
@@ -351,14 +390,20 @@ interface AuditLog {
                         </span>
                       </td>
                       <td style="padding: 12px; border: 1px solid #e2e8f0; text-align: center;">
-                        <div style="display: flex; gap: 6px; justify-content: center; align-items: center;">
+                        <div style="display: flex; gap: 6px; justify-content: center; align-items: center; flex-wrap: wrap;">
                           <button *ngIf="r.status === 'CREADA'" (click)="changeStatus(r.id, 'CONFIRMADA')" style="background-color: #059669; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">
                             ✅ Confirmar
                           </button>
                           <button *ngIf="r.status === 'CONFIRMADA'" (click)="changeStatus(r.id, 'EN_ESTADIA')" style="background-color: #0284c7; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">
                             🏨 Check-In
                           </button>
-                          <button (click)="deleteReservation(r.id)" style="background-color: #dc2626; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">
+                          <button *ngIf="r.status === 'EN_ESTADIA'" (click)="changeStatus(r.id, 'CHECKOUT')" style="background-color: #7c3aed; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">
+                            🧳 Check-Out
+                          </button>
+                          <button *ngIf="r.status === 'CREADA' || r.status === 'CONFIRMADA'" (click)="changeStatus(r.id, 'CANCELADA')" style="background-color: #d97706; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">
+                            ✖️ Cancelar
+                          </button>
+                          <button *ngIf="isAdminUser()" (click)="deleteReservation(r.id)" style="background-color: #dc2626; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">
                             🗑️ Eliminar
                           </button>
                         </div>
@@ -516,9 +561,13 @@ export class App implements OnInit {
         if (this.isAdminUser()) {
           this.loadReservations();
           this.loadAuditLogs();
+        } else if (this.isRecepcionistaUser()) {
+          this.loadReservations();
         } else if (this.isAuditorUser()) {
           this.currentTab = 'audit';
           this.loadAuditLogs();
+        } else {
+          this.loadReservations();
         }
       }
     });
@@ -537,13 +586,22 @@ export class App implements OnInit {
     return roles.includes('ADMIN');
   }
 
+  isRecepcionistaUser(): boolean {
+    const roles = this.userRoles.map(r => r.toUpperCase());
+    return roles.includes('RECEPCIONISTA') || roles.includes('OPERADOR');
+  }
+
   isAuditorUser(): boolean {
     const roles = this.userRoles.map(r => r.toUpperCase());
     return roles.includes('AUDITOR');
   }
 
+  canManageReservations(): boolean {
+    return this.isAdminUser() || this.isRecepcionistaUser();
+  }
+
   isOnlyAuditor(): boolean {
-    return this.isAuditorUser() && !this.isAdminUser();
+    return this.isAuditorUser() && !this.isAdminUser() && !this.isRecepcionistaUser();
   }
 
   canViewAudit(): boolean {
@@ -557,6 +615,8 @@ export class App implements OnInit {
     this.currentTab = tab;
     if (tab === 'audit') {
       this.loadAuditLogs();
+    } else if (tab === 'reservations' || tab === 'admin-reservations') {
+      this.loadReservations();
     }
   }
 
@@ -686,9 +746,7 @@ export class App implements OnInit {
         this.addAuditLog('RESERVATION_CREATED', `Reserva #${created.id || 'N/D'} para ${created.guestName} publicada en RabbitMQ`);
 
         this.newReservation = { guestName: '', guestEmail: '', guestPhone: '', roomType: 'Cabaña Estándar', checkInDate: '', checkOutDate: '', specialRequests: '', status: 'CREADA' };
-        if (this.isAdminUser()) {
-          this.loadReservations();
-        }
+        this.loadReservations();
       },
       error: (err) => {
         console.error('Error al crear reserva:', err);
