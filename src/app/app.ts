@@ -23,6 +23,7 @@ interface Unit {
   name: string;
   location: string;
   type: string;
+  priceNumeric: number;
   pricePerNight: string;
   capacity: string;
   description: string;
@@ -119,6 +120,12 @@ interface AuditLog {
              style="text-align: left; text-decoration: none; color: #cbd5e1; padding: 10px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 10px; transition: background 0.2s;">
             ⚡ Kafka UI (Streaming) ↗
           </a>
+
+          <!-- SOLO ADMIN: Enlace externo a RabbitMQ UI -->
+          <a *ngIf="isAdminUser()" href="http://100.55.187.142:15673" target="_blank" rel="noopener noreferrer"
+             style="text-align: left; text-decoration: none; color: #cbd5e1; padding: 10px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 10px; transition: background 0.2s;">
+            🐰 RabbitMQ UI (Broker) ↗
+          </a>
         </nav>
 
         <!-- Cerrar Sesión -->
@@ -159,49 +166,64 @@ interface AuditLog {
           <!-- Outlet para /admin-mq -->
           <router-outlet *ngIf="isAdminRoute()"></router-outlet>
 
-          <!-- VISTA 1: HOME & PERFIL CON KPIS -->
+          <!-- VISTA 1: HOME & PERFIL CON KPIS REALES -->
           <div *ngIf="authService.isLoggedIn() && currentTab === 'home' && !isAdminRoute()">
             <div style="margin-bottom: 25px;">
               <h1 style="margin: 0 0 6px 0; color: #0f172a; font-size: 24px; font-weight: 700;">Panel de Control & Perfil Corporativo</h1>
               <p style="margin: 0; color: #64748b; font-size: 14px;">Sistema unificado de la red de hostales, cabañas y lodges de turismo AndesStay.</p>
             </div>
 
-            <!-- Resumen de KPIs Operativos -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 25px;">
+            <!-- Resumen de KPIs Operativos (Datos Reales) -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 15px; margin-bottom: 25px;">
               <div style="background: white; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-                <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600;">Unidades en Red</div>
-                <div style="font-size: 24px; font-weight: 700; color: #0f172a; margin-top: 5px;">20 Unidades</div>
+                <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600;">Total Reservas</div>
+                <div style="font-size: 26px; font-weight: 700; color: #0f172a; margin-top: 5px;">{{ reservations.length }}</div>
               </div>
               <div style="background: white; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-                <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600;">Ocupación Promedio</div>
-                <div style="font-size: 24px; font-weight: 700; color: #059669; margin-top: 5px;">85.4%</div>
+                <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600;">Confirmadas / En Estadía</div>
+                <div style="font-size: 26px; font-weight: 700; color: #059669; margin-top: 5px;">{{ confirmedCount }}</div>
               </div>
               <div style="background: white; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-                <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600;">Broker RabbitMQ</div>
-                <div style="font-size: 24px; font-weight: 700; color: #0284c7; margin-top: 5px;">Operativo ⚡</div>
+                <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600;">Pendientes (Creadas)</div>
+                <div style="font-size: 26px; font-weight: 700; color: #d97706; margin-top: 5px;">{{ pendingCount }}</div>
+              </div>
+              <div style="background: white; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+                <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600;">Mensajería & Streaming</div>
+                <div style="font-size: 16px; font-weight: 700; color: #0284c7; margin-top: 10px;">RabbitMQ + Kafka ⚡</div>
               </div>
             </div>
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-bottom: 30px;">
+              <!-- Credenciales y Permisos del Rol -->
               <div style="background: white; border: 1px solid #e2e8f0; padding: 24px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
                 <h3 style="margin-top: 0; color: #334155; font-size: 16px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">
-                  📋 Credenciales de Usuario
+                  📋 Credenciales & Permisos Activos
                 </h3>
                 <div style="font-size: 14px; color: #475569; display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
                   <div><strong>Nombre:</strong> {{ authService.getActiveAccount()?.name }}</div>
                   <div><strong>Correo:</strong> {{ authService.getActiveAccount()?.username }}</div>
                   <div><strong>Rol Activo:</strong> <span style="background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 12px;">{{ userRoles.length ? userRoles.join(', ') : 'CLIENTE / HUÉSPED' }}</span></div>
+                  <div style="margin-top: 6px; padding-top: 10px; border-top: 1px solid #f1f5f9;">
+                    <div style="font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 6px;">Permisos de tu rol:</div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                      <span *ngFor="let perm of rolePermissions" style="background: #f1f5f9; color: #334155; font-size: 11px; padding: 3px 8px; border-radius: 4px; border: 1px solid #cbd5e1;">
+                        ✓ {{ perm }}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
+              <!-- Estado de la Arquitectura -->
               <div style="background: white; border: 1px solid #e2e8f0; padding: 24px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
                 <h3 style="margin-top: 0; color: #334155; font-size: 16px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">
-                  ⚡ Estado de la Arquitectura
+                  ⚡ Estado de la Arquitectura Cloud Native
                 </h3>
                 <div style="font-size: 14px; color: #475569; display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-                  <div><strong>Infraestructura:</strong> AWS EC2 & API Gateway</div>
-                  <div><strong>Seguridad:</strong> Microsoft Entra ID (IDaaS JWT)</div>
-                  <div><strong>Mensajería:</strong> RabbitMQ & Kafka Streaming</div>
+                  <div><strong>Infraestructura:</strong> AWS EC2 + Docker Compose + BFF</div>
+                  <div><strong>Seguridad:</strong> Microsoft Entra ID (IDaaS JWT / RBAC)</div>
+                  <div><strong>Broker Operativo:</strong> RabbitMQ (Voucher, Housekeeping, Email)</div>
+                  <div><strong>Event Streaming:</strong> Apache Kafka (Auditoría, Reportería, DLT)</div>
                 </div>
               </div>
             </div>
@@ -211,7 +233,7 @@ interface AuditLog {
               <p style="color: #64748b; font-size: 14px; margin-bottom: 20px;">Explora el catálogo oficial de nuestra red turística o realiza una nueva reserva:</p>
               <div style="display: flex; gap: 15px; flex-wrap: wrap;">
                 <button (click)="switchTab('catalog')" style="background: #334155; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer;">
-                  Ver Catálogo de Unidades ➔
+                  Ver Catálogo de Unidades ({{ catalogUnits.length }}) ➔
                 </button>
                 <button (click)="switchTab('reservations')" style="background: #0284c7; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer;">
                   Realizar Nueva Reserva ➔
@@ -220,39 +242,57 @@ interface AuditLog {
             </div>
           </div>
 
-          <!-- VISTA: CATÁLOGO DE HOSTALES Y CABAÑAS -->
+          <!-- VISTA: CATÁLOGO DE HOSTALES Y CABAÑAS (8 UNIDADES + FILTRO) -->
           <div *ngIf="authService.isLoggedIn() && currentTab === 'catalog' && !isAdminRoute() && !isOnlyAuditor()">
-            <div style="margin-bottom: 25px;">
+            <div style="margin-bottom: 20px;">
               <h1 style="margin: 0 0 6px 0; color: #0f172a; font-size: 24px; font-weight: 700;">Catálogo de Unidades - Red AndesStay</h1>
-              <p style="margin: 0; color: #64748b; font-size: 14px;">Conoce nuestra red de 20 hostales, cabañas y lodges de turismo.</p>
+              <p style="margin: 0; color: #64748b; font-size: 14px;">Explora nuestras unidades turísticas a lo largo de Chile. Pago presencial en recepción al hacer Check-In.</p>
+            </div>
+
+            <!-- Barra de Búsqueda y Filtro -->
+            <div style="background: white; border: 1px solid #e2e8f0; padding: 16px 20px; border-radius: 10px; margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+              <input type="text" [(ngModel)]="catalogSearch" placeholder="🔍 Buscar por nombre o ubicación (ej: Pucón, Chiloé, Valparaíso)..."
+                style="flex: 1; min-width: 240px; padding: 10px 14px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 14px;">
+              <select [(ngModel)]="catalogTypeFilter" style="padding: 10px 14px; border-radius: 6px; border: 1px solid #cbd5e1; background: white; font-size: 14px; min-width: 200px;">
+                <option value="ALL">Todos los tipos de unidad</option>
+                <option value="Cabaña Estándar">Cabaña Estándar</option>
+                <option value="Suite Montaña">Suite Montaña</option>
+                <option value="Habitación Familiar">Habitación Familiar</option>
+                <option value="Lodge de Interés Especial">Lodge de Interés Especial</option>
+              </select>
             </div>
 
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px;">
-              <div *ngFor="let unit of catalogUnits" style="background: white; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04); display: flex; flex-direction: column;">
-                <div style="background: #0f172a; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
+              <div *ngFor="let unit of filteredCatalogUnits" style="background: white; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04); display: flex; flex-direction: column;">
+                <div style="background: #0f172a; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
                   <h3 style="margin: 0; font-size: 16px; color: #38bdf8;">{{ unit.name }}</h3>
-                  <span style="font-size: 12px; background: #334155; padding: 3px 8px; border-radius: 4px; font-weight: 500;">{{ unit.location }}</span>
+                  <span style="font-size: 11px; background: #334155; padding: 3px 8px; border-radius: 4px; font-weight: 500; white-space: nowrap;">{{ unit.location }}</span>
                 </div>
                 <div style="padding: 20px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between;">
                   <div>
+                    <div style="font-size: 11px; font-weight: 600; color: #0284c7; text-transform: uppercase; margin-bottom: 6px;">{{ unit.type }}</div>
                     <p style="margin: 0 0 12px 0; color: #475569; font-size: 14px; line-height: 1.5;">{{ unit.description }}</p>
-                    <div style="font-size: 13px; color: #334155; margin-bottom: 8px;"><strong>Capacidad:</strong> {{ unit.capacity }}</div>
-                    <div style="font-size: 13px; color: #059669; font-weight: 600; margin-bottom: 12px;">Tarifa Referencial: {{ unit.pricePerNight }} por noche</div>
+                    <div style="font-size: 13px; color: #334155; margin-bottom: 6px;"><strong>Capacidad:</strong> {{ unit.capacity }}</div>
+                    <div style="font-size: 14px; color: #059669; font-weight: 700; margin-bottom: 12px;">Tarifa: {{ unit.pricePerNight }} / noche</div>
                     <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 15px;">
                       <span *ngFor="let feat of unit.features" style="background: #f1f5f9; color: #475569; font-size: 11px; padding: 3px 8px; border-radius: 4px; border: 1px solid #cbd5e1;">
                         ✓ {{ feat }}
                       </span>
                     </div>
                   </div>
-                  <button (click)="selectUnitForReservation(unit.type)" style="background: #0284c7; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; width: 100%;">
+                  <button (click)="selectUnitForReservation(unit.name)" style="background: #0284c7; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; width: 100%;">
                     Reservar Esta Unidad ➔
                   </button>
                 </div>
               </div>
             </div>
+
+            <div *ngIf="filteredCatalogUnits.length === 0" style="text-align: center; padding: 40px; background: white; border-radius: 10px; border: 1px solid #e2e8f0; color: #64748b;">
+              No se encontraron unidades que coincidan con tu búsqueda.
+            </div>
           </div>
 
-          <!-- VISTA 2: NUEVA RESERVA + SEGUIMIENTO -->
+          <!-- VISTA 2: NUEVA RESERVA + CALCULADORA + SEGUIMIENTO -->
           <div *ngIf="authService.isLoggedIn() && currentTab === 'reservations' && !isAdminRoute() && !isOnlyAuditor()">
             <div style="margin-bottom: 25px;">
               <h1 style="margin: 0 0 6px 0; color: #0f172a; font-size: 24px; font-weight: 700;">Formulario de Reserva - AndesStay</h1>
@@ -264,13 +304,13 @@ interface AuditLog {
               
               <form (ngSubmit)="submitReservation()" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
                 <div>
-                  <label style="display:block; margin-bottom:6px; font-weight:600; color: #475569; font-size: 13px;">Nombre Completo del Huésped:</label>
+                  <label style="display:block; margin-bottom:6px; font-weight:600; color: #475569; font-size: 13px;">Nombre Completo del Huésped *:</label>
                   <input type="text" [(ngModel)]="newReservation.guestName" name="guestName" placeholder="Ej: Marcela Contreras" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box; font-size: 14px;" required>
                 </div>
 
                 <div>
-                  <label style="display:block; margin-bottom:6px; font-weight:600; color: #475569; font-size: 13px;">Correo Electrónico de Contacto:</label>
-                  <input type="email" [(ngModel)]="newReservation.guestEmail" name="guestEmail" placeholder="Ej: cliente&#64;correo.com" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box; font-size: 14px;">
+                  <label style="display:block; margin-bottom:6px; font-weight:600; color: #475569; font-size: 13px;">Correo Electrónico de Contacto *:</label>
+                  <input type="email" [(ngModel)]="newReservation.guestEmail" name="guestEmail" placeholder="Ej: cliente&#64;correo.cl" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box; font-size: 14px;" required>
                 </div>
 
                 <div>
@@ -279,28 +319,46 @@ interface AuditLog {
                 </div>
 
                 <div>
-                  <label style="display:block; margin-bottom:6px; font-weight:600; color: #475569; font-size: 13px;">Tipo de Unidad / Habitación:</label>
+                  <label style="display:block; margin-bottom:6px; font-weight:600; color: #475569; font-size: 13px;">Unidad Turística / Habitación *:</label>
                   <select [(ngModel)]="newReservation.roomType" name="roomType" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box; background: white; font-size: 14px;">
-                    <option value="Cabaña Estándar">Cabaña Estándar (Cap. 2-4 personas - Vista al bosque)</option>
-                    <option value="Suite Montaña">Suite Montaña (Chimenea, Jacuzzi y Balcón)</option>
-                    <option value="Habitación Familiar">Habitación Familiar (Amplia con 3 camas y desayuno inc.)</option>
-                    <option value="Lodge de Interés Especial">Lodge Turístico Especial (Zona exclusiva)</option>
+                    <option *ngFor="let unit of catalogUnits" [value]="unit.name">
+                      {{ unit.name }} — {{ unit.location }} ({{ unit.pricePerNight }} / noche)
+                    </option>
                   </select>
                 </div>
 
                 <div>
-                  <label style="display:block; margin-bottom:6px; font-weight:600; color: #475569; font-size: 13px;">Fecha Check-In:</label>
-                  <input type="date" [(ngModel)]="newReservation.checkInDate" name="checkInDate" min="2025-01-01" max="2030-12-31" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box; font-size: 14px;" required>
+                  <label style="display:block; margin-bottom:6px; font-weight:600; color: #475569; font-size: 13px;">Fecha Check-In *:</label>
+                  <input type="date" [(ngModel)]="newReservation.checkInDate" name="checkInDate" [min]="todayIso" max="2030-12-31" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box; font-size: 14px;" required>
                 </div>
 
                 <div>
-                  <label style="display:block; margin-bottom:6px; font-weight:600; color: #475569; font-size: 13px;">Fecha Check-Out:</label>
-                  <input type="date" [(ngModel)]="newReservation.checkOutDate" name="checkOutDate" min="2025-01-01" max="2030-12-31" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box; font-size: 14px;" required>
+                  <label style="display:block; margin-bottom:6px; font-weight:600; color: #475569; font-size: 13px;">Fecha Check-Out *:</label>
+                  <input type="date" [(ngModel)]="newReservation.checkOutDate" name="checkOutDate" [min]="newReservation.checkInDate || todayIso" max="2030-12-31" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box; font-size: 14px;" required>
                 </div>
 
                 <div style="grid-column: span 2;">
                   <label style="display:block; margin-bottom:6px; font-weight:600; color: #475569; font-size: 13px;">Peticiones Especiales (Opcional):</label>
                   <textarea [(ngModel)]="newReservation.specialRequests" name="specialRequests" rows="2" placeholder="Ej: Requerimos cama adicional o llegada tardía..." style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; box-sizing: border-box; font-size: 14px;"></textarea>
+                </div>
+
+                <!-- Resumen Automático de Tarifa + Aviso de Pago Presencial -->
+                <div style="grid-column: span 2; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                  <div>
+                    <div style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">
+                      💳 Modalidad de Pago: Presencial en recepción al hacer Check-In (sin cobro online)
+                    </div>
+                    <div style="font-size: 13px; color: #475569;" *ngIf="estimatedNights > 0">
+                      Estadía calculada: <strong>{{ estimatedNights }} {{ estimatedNights === 1 ? 'noche' : 'noches' }}</strong> × {{ formatClp(selectedNightlyRate) }}
+                    </div>
+                    <div style="font-size: 13px; color: #64748b;" *ngIf="estimatedNights <= 0">
+                      Selecciona fechas válidas de Check-In y Check-Out para ver el total estimado.
+                    </div>
+                  </div>
+                  <div *ngIf="estimatedNights > 0" style="text-align: right;">
+                    <div style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 600;">Total Estimado</div>
+                    <div style="font-size: 22px; font-weight: 800; color: #059669;">{{ formatClp(estimatedTotal) }}</div>
+                  </div>
                 </div>
 
                 <div style="grid-column: span 2; text-align: right; margin-top: 5px;">
@@ -334,10 +392,10 @@ interface AuditLog {
                     <tr *ngFor="let r of reservations" style="border-bottom: 1px solid #f1f5f9;">
                       <td style="padding: 10px; border: 1px solid #e2e8f0; font-weight: bold;">#{{ r.id }}</td>
                       <td style="padding: 10px; border: 1px solid #e2e8f0;">{{ r.guestName }}</td>
-                      <td style="padding: 10px; border: 1px solid #e2e8f0;">{{ r.roomType || 'Cabaña Estándar' }}</td>
+                      <td style="padding: 10px; border: 1px solid #e2e8f0;">{{ r.roomType || 'Cabaña Bosque Andino' }}</td>
                       <td style="padding: 10px; border: 1px solid #e2e8f0; font-size: 12px;">{{ r.checkInDate }} al {{ r.checkOutDate }}</td>
                       <td style="padding: 10px; border: 1px solid #e2e8f0;">
-                        <span style="background: #e0f2fe; color: #0369a1; padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 11px;">
+                        <span [ngStyle]="getStatusBadgeStyle(r.status)" style="padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 11px; display: inline-block;">
                           {{ r.status }}
                         </span>
                       </td>
@@ -359,11 +417,15 @@ interface AuditLog {
             </div>
 
             <section style="background: white; border: 1px solid #e2e8f0; padding: 25px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px;">
                 <h3 style="margin: 0; color: #1e293b; font-size: 16px;">📋 Listado General de Control Operativo</h3>
-                <button (click)="loadReservations()" style="background: #475569; color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">
-                  🔄 Actualizar Listado
-                </button>
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                  <input type="text" [(ngModel)]="reservationSearch" placeholder="🔍 Filtrar por huésped o estado..."
+                    style="padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; min-width: 220px;">
+                  <button (click)="loadReservations()" style="background: #475569; color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;">
+                    🔄 Actualizar Listado
+                  </button>
+                </div>
               </div>
 
               <div style="overflow-x: auto;">
@@ -379,13 +441,13 @@ interface AuditLog {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr *ngFor="let r of reservations" style="border-bottom: 1px solid #f1f5f9;">
+                    <tr *ngFor="let r of filteredReservations" style="border-bottom: 1px solid #f1f5f9;">
                       <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: bold;">#{{ r.id }}</td>
                       <td style="padding: 12px; border: 1px solid #e2e8f0; font-weight: 600; color: #0f172a;">{{ r.guestName }}</td>
-                      <td style="padding: 12px; border: 1px solid #e2e8f0; color: #475569;">{{ r.roomType || 'Cabaña Estándar' }}</td>
+                      <td style="padding: 12px; border: 1px solid #e2e8f0; color: #475569;">{{ r.roomType || 'Cabaña Bosque Andino' }}</td>
                       <td style="padding: 12px; border: 1px solid #e2e8f0; color: #475569; font-size: 12px;">{{ r.checkInDate }} al {{ r.checkOutDate }}</td>
                       <td style="padding: 12px; border: 1px solid #e2e8f0;">
-                        <span style="background: #e2e8f0; color: #334155; padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 11px; display: inline-block;">
+                        <span [ngStyle]="getStatusBadgeStyle(r.status)" style="padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 11px; display: inline-block;">
                           {{ r.status }}
                         </span>
                       </td>
@@ -409,9 +471,9 @@ interface AuditLog {
                         </div>
                       </td>
                     </tr>
-                    <tr *ngIf="reservations.length === 0 && !loading">
+                    <tr *ngIf="filteredReservations.length === 0 && !loading">
                       <td colspan="6" style="text-align: center; padding: 30px; color: #64748b;">
-                        No hay reservas registradas en el sistema.
+                        No hay reservas que coincidan con el filtro actual.
                       </td>
                     </tr>
                   </tbody>
@@ -445,7 +507,7 @@ interface AuditLog {
                       <th style="padding: 12px; border: 1px solid #334155;">ID Evento</th>
                       <th style="padding: 12px; border: 1px solid #334155;">Marca de Tiempo</th>
                       <th style="padding: 12px; border: 1px solid #334155;">Usuario IDaaS</th>
-                      <th style="padding: 12px; border: 1px solid #334155;">Acción / Evento MQ</th>
+                      <th style="padding: 12px; border: 1px solid #334155;">Acción / Evento Kafka</th>
                       <th style="padding: 12px; border: 1px solid #334155;">Detalles de Trazabilidad</th>
                     </tr>
                   </thead>
@@ -500,53 +562,109 @@ export class App implements OnInit {
   errorMessage = '';
   successMessage = '';
 
+  // Filtros
+  catalogSearch = '';
+  catalogTypeFilter = 'ALL';
+  reservationSearch = '';
+
+  // Fecha de hoy en formato YYYY-MM-DD para bloquear fechas pasadas
+  todayIso: string = new Date().toISOString().split('T')[0];
+
   catalogUnits: Unit[] = [
     {
       id: 1,
       name: 'Cabaña Bosque Andino',
-      location: 'Valparaíso / Zona Interior',
+      location: 'Valparaíso / Olmué',
       type: 'Cabaña Estándar',
+      priceNumeric: 65000,
       pricePerNight: '$65.000 CLP',
       capacity: '2 a 4 personas',
-      description: 'Hermosa cabaña rodeada de naturaleza, equipada con cocina completa, calefacción a leña y vistas panorámicas.',
+      description: 'Cabaña rodeada de bosque nativo, equipada con cocina completa, calefacción a leña y terraza panorámica.',
       features: ['Wi-Fi Satelital', 'Estacionamiento', 'Calefacción', 'Cocina']
     },
     {
       id: 2,
       name: 'Suite Cumbre de Montaña',
-      location: 'Cajón / Zona Cordillera',
+      location: 'Cajón del Maipo',
       type: 'Suite Montaña',
+      priceNumeric: 110000,
       pricePerNight: '$110.000 CLP',
       capacity: '2 personas (Exclusiva)',
-      description: 'Suite de lujo con chimenea central, jacuzzi privado en terraza y vista directa hacia las cumbres nevadas.',
+      description: 'Suite de lujo con chimenea central, jacuzzi privado en terraza y vista directa hacia la cordillera.',
       features: ['Jacuzzi Privado', 'Chimenea', 'Desayuno Incluido', 'Balcón Panorámico']
     },
     {
       id: 3,
       name: 'Lodge Familiar Los Coigues',
-      location: 'Reserva Natural Sur',
+      location: 'Pucón / Zona Lacustre',
       type: 'Habitación Familiar',
+      priceNumeric: 95000,
       pricePerNight: '$95.000 CLP',
       capacity: 'Hasta 5 personas',
-      description: 'Amplia habitación con múltiples camas, ideal para familias que buscan descanso y cercanía con senderos de trekking.',
+      description: 'Amplia habitación familiar con 3 camas grandes, cercana a senderos de trekking y termas naturales.',
       features: ['3 Camas Grandes', 'Zona de Juegos', 'Área de Quincho', 'Pet Friendly']
     },
     {
       id: 4,
       name: 'Lodge de Interés Especial Glaciar',
-      location: 'Santuario de la Naturaleza',
+      location: 'Torres del Paine',
       type: 'Lodge de Interés Especial',
+      priceNumeric: 140000,
       pricePerNight: '$140.000 CLP',
       capacity: '2 a 3 personas',
-      description: 'Unidad especializada para expediciones y turismo aventura, con centro de informaciones y guías locales disponibles.',
+      description: 'Unidad especializada para expediciones y turismo aventura, con centro de informaciones y guías locales.',
       features: ['Guía de Trekking', 'Equipamiento Técnico', 'Vista al Glaciar', 'Pensión Completa']
+    },
+    {
+      id: 5,
+      name: 'Cabaña Mirador del Elqui',
+      location: 'Valle del Elqui',
+      type: 'Cabaña Estándar',
+      priceNumeric: 65000,
+      pricePerNight: '$65.000 CLP',
+      capacity: '2 a 4 personas',
+      description: 'Cabaña con techo panorámico ideal para observación astronómica bajo los cielos más limpios de Chile.',
+      features: ['Telescopio Incluido', 'Terraza Privada', 'Piscina Compartida', 'Wi-Fi']
+    },
+    {
+      id: 6,
+      name: 'Suite Lago Llanquihue',
+      location: 'Puerto Varas',
+      type: 'Suite Montaña',
+      priceNumeric: 110000,
+      pricePerNight: '$110.000 CLP',
+      capacity: '2 personas',
+      description: 'Suite boutique frente al lago con vista despejada al Volcán Osorno y tinaja temperada exterior.',
+      features: ['Vista al Volcán', 'Tinaja Caliente', 'Desayuno Sureño', 'Calefacción Central']
+    },
+    {
+      id: 7,
+      name: 'Hostal Familiar Palafito Sur',
+      location: 'Chiloé / Castro',
+      type: 'Habitación Familiar',
+      priceNumeric: 95000,
+      pricePerNight: '$95.000 CLP',
+      capacity: 'Hasta 6 personas',
+      description: 'Alojamiento tradicional en madera nativa con muelle propio, ideal para familias que recorren la isla.',
+      features: ['Muelle Privado', 'Estufa a Pellet', 'Desayuno Incluido', 'Tour Fiordos']
+    },
+    {
+      id: 8,
+      name: 'Refugio Expedición Atacama',
+      location: 'San Pedro de Atacama',
+      type: 'Lodge de Interés Especial',
+      priceNumeric: 140000,
+      pricePerNight: '$140.000 CLP',
+      capacity: '2 a 3 personas',
+      description: 'Lodge sustentable en adobe diseñado para expediciones al salar, géiseres y lagunas altiplánicas.',
+      features: ['Energía Solar', 'Traslado Aeropuerto', 'Excursiones Guiadas', 'Pensión Completa']
     }
   ];
 
   auditLogs: AuditLog[] = [];
 
   newReservation: Reservation = {
-    guestName: '', guestEmail: '', guestPhone: '', roomType: 'Cabaña Estándar', checkInDate: '', checkOutDate: '', specialRequests: '', status: 'CREADA'
+    guestName: '', guestEmail: '', guestPhone: '', roomType: 'Cabaña Bosque Andino', checkInDate: '', checkOutDate: '', specialRequests: '', status: 'CREADA'
   };
 
   constructor(
@@ -575,6 +693,88 @@ export class App implements OnInit {
 
   get userRoles(): string[] {
     return this.authService.getRoles ? this.authService.getRoles() : [];
+  }
+
+  get confirmedCount(): number {
+    return this.reservations.filter(r => r.status === 'CONFIRMADA' || r.status === 'EN_ESTADIA').length;
+  }
+
+  get pendingCount(): number {
+    return this.reservations.filter(r => r.status === 'CREADA').length;
+  }
+
+  get rolePermissions(): string[] {
+    if (this.isAdminUser()) {
+      return ['Gestión de Reservas', 'Eliminar Registros', 'Auditoría Kafka', 'Admin Broker MQ', 'Kafka UI & RabbitMQ UI'];
+    }
+    if (this.isRecepcionistaUser()) {
+      return ['Catálogo y Reservas', 'Confirmar Reservas', 'Check-In / Check-Out', 'Cancelar Estancias'];
+    }
+    if (this.isAuditorUser()) {
+      return ['Solo Lectura', 'Auditoría y Trazabilidad Kafka'];
+    }
+    return ['Explorar Catálogo', 'Crear Reservas', 'Seguimiento de Estado'];
+  }
+
+  get filteredCatalogUnits(): Unit[] {
+    const query = this.catalogSearch.trim().toLowerCase();
+    return this.catalogUnits.filter(u => {
+      const matchesType = this.catalogTypeFilter === 'ALL' || u.type === this.catalogTypeFilter;
+      const matchesQuery = !query ||
+        u.name.toLowerCase().includes(query) ||
+        u.location.toLowerCase().includes(query) ||
+        u.description.toLowerCase().includes(query);
+      return matchesType && matchesQuery;
+    });
+  }
+
+  get filteredReservations(): Reservation[] {
+    const query = this.reservationSearch.trim().toLowerCase();
+    if (!query) return this.reservations;
+    return this.reservations.filter(r =>
+      (r.guestName && r.guestName.toLowerCase().includes(query)) ||
+      (r.status && r.status.toLowerCase().includes(query)) ||
+      (r.roomType && r.roomType.toLowerCase().includes(query))
+    );
+  }
+
+  get selectedNightlyRate(): number {
+    const unit = this.catalogUnits.find(u => u.name === this.newReservation.roomType);
+    return unit ? unit.priceNumeric : 65000;
+  }
+
+  get estimatedNights(): number {
+    if (!this.newReservation.checkInDate || !this.newReservation.checkOutDate) return 0;
+    const inDate = new Date(this.newReservation.checkInDate + 'T00:00:00');
+    const outDate = new Date(this.newReservation.checkOutDate + 'T00:00:00');
+    if (isNaN(inDate.getTime()) || isNaN(outDate.getTime())) return 0;
+    const diffMs = outDate.getTime() - inDate.getTime();
+    return Math.round(diffMs / (1000 * 60 * 60 * 24));
+  }
+
+  get estimatedTotal(): number {
+    return this.estimatedNights > 0 ? this.estimatedNights * this.selectedNightlyRate : 0;
+  }
+
+  formatClp(amount: number): string {
+    return '$' + amount.toLocaleString('es-CL') + ' CLP';
+  }
+
+  getStatusBadgeStyle(status: string): Record<string, string> {
+    switch (status) {
+      case 'CREADA':
+        return { background: '#e0f2fe', color: '#0369a1' };
+      case 'CONFIRMADA':
+        return { background: '#dcfce7', color: '#15803d' };
+      case 'EN_ESTADIA':
+        return { background: '#ede9fe', color: '#6d28d9' };
+      case 'CHECKOUT':
+        return { background: '#f1f5f9', color: '#475569' };
+      case 'CANCELADA':
+        return { background: '#fee2e2', color: '#b91c1c' };
+      default:
+        return { background: '#e2e8f0', color: '#334155' };
+    }
   }
 
   isAdminRoute(): boolean {
@@ -613,6 +813,8 @@ export class App implements OnInit {
       this.router.navigate(['/']);
     }
     this.currentTab = tab;
+    this.errorMessage = '';
+    this.successMessage = '';
     if (tab === 'audit') {
       this.loadAuditLogs();
     } else if (tab === 'reservations' || tab === 'admin-reservations') {
@@ -620,8 +822,8 @@ export class App implements OnInit {
     }
   }
 
-  selectUnitForReservation(unitType: string): void {
-    this.newReservation.roomType = unitType;
+  selectUnitForReservation(unitName: string): void {
+    this.newReservation.roomType = unitName;
     this.currentTab = 'reservations';
   }
 
@@ -705,30 +907,49 @@ export class App implements OnInit {
     this.errorMessage = '';
     this.successMessage = '';
 
+    // 1. Validar nombre del huésped
     const guest = this.newReservation.guestName ? this.newReservation.guestName.trim() : '';
-    if (guest.length < 3) {
-      this.errorMessage = 'El nombre del huésped debe tener al menos 3 caracteres.';
+    const nameRegex = /^[a-zA-ZÁÉÍÓÚáéíóúÑñÜü\s'-]{3,80}$/;
+    if (!nameRegex.test(guest)) {
+      this.errorMessage = 'El nombre del huésped debe tener al menos 3 letras y no puede contener números ni símbolos inválidos.';
       return;
     }
+
+    // 2. Validar correo electrónico obligatorio
+    const email = this.newReservation.guestEmail ? this.newReservation.guestEmail.trim() : '';
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    if (!emailRegex.test(email)) {
+      this.errorMessage = 'Debes ingresar un correo electrónico válido (ej: cliente@correo.cl).';
+      return;
+    }
+
+    // 3. Validar teléfono si se ingresa
+    const phone = this.newReservation.guestPhone ? this.newReservation.guestPhone.trim() : '';
+    if (phone.length > 0) {
+      const digitsOnly = phone.replace(/\D/g, '');
+      if (digitsOnly.length < 8 || digitsOnly.length > 15) {
+        this.errorMessage = 'Si ingresas un teléfono, debe contener entre 8 y 15 dígitos numéricos.';
+        return;
+      }
+    }
+
+    // 4. Validar fechas
     if (!this.newReservation.checkInDate || !this.newReservation.checkOutDate) {
       this.errorMessage = 'Debes ingresar tanto la fecha de Check-In como la de Check-Out.';
       return;
     }
 
-    const checkIn = new Date(this.newReservation.checkInDate);
-    const checkOut = new Date(this.newReservation.checkOutDate);
-    const minYear = 2025;
-    const maxYear = 2030;
+    const checkIn = new Date(this.newReservation.checkInDate + 'T00:00:00');
+    const checkOut = new Date(this.newReservation.checkOutDate + 'T00:00:00');
+    const today = new Date(this.todayIso + 'T00:00:00');
 
-    if (
-      isNaN(checkIn.getTime()) ||
-      isNaN(checkOut.getTime()) ||
-      checkIn.getFullYear() < minYear ||
-      checkIn.getFullYear() > maxYear ||
-      checkOut.getFullYear() < minYear ||
-      checkOut.getFullYear() > maxYear
-    ) {
-      this.errorMessage = `Las fechas deben ser reales y estar entre los años ${minYear} y ${maxYear}.`;
+    if (isNaN(checkIn.getTime()) || isNaN(checkOut.getTime())) {
+      this.errorMessage = 'Las fechas ingresadas no son válidas.';
+      return;
+    }
+
+    if (checkIn < today) {
+      this.errorMessage = 'La fecha de Check-In no puede ser anterior al día de hoy.';
       return;
     }
 
@@ -737,15 +958,21 @@ export class App implements OnInit {
       return;
     }
 
+    const nights = this.estimatedNights;
+    if (nights > 30) {
+      this.errorMessage = 'La estadía máxima permitida por reserva es de 30 noches.';
+      return;
+    }
+
     this.saving = true;
     this.http.post<Reservation>(this.apiUrl, this.newReservation).subscribe({
       next: (created) => {
-        this.successMessage = `¡Reserva creada con éxito para ${created.guestName}! Notificación enviada a RabbitMQ.`;
+        this.successMessage = `¡Reserva creada con éxito para ${created.guestName}! (${nights} ${nights === 1 ? 'noche' : 'noches'} - Pago presencial en Check-In). Notificación enviada a RabbitMQ y Kafka.`;
         this.saving = false;
         
-        this.addAuditLog('RESERVATION_CREATED', `Reserva #${created.id || 'N/D'} para ${created.guestName} publicada en RabbitMQ`);
+        this.addAuditLog('RESERVATION_CREATED', `Reserva #${created.id || 'N/D'} para ${created.guestName} publicada en RabbitMQ y Kafka`);
 
-        this.newReservation = { guestName: '', guestEmail: '', guestPhone: '', roomType: 'Cabaña Estándar', checkInDate: '', checkOutDate: '', specialRequests: '', status: 'CREADA' };
+        this.newReservation = { guestName: '', guestEmail: '', guestPhone: '', roomType: 'Cabaña Bosque Andino', checkInDate: '', checkOutDate: '', specialRequests: '', status: 'CREADA' };
         this.loadReservations();
       },
       error: (err) => {
